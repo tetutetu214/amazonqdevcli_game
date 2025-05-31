@@ -142,12 +142,13 @@ class UI:
             # 用語集画面
             self.draw_glossary()
             
-            # 戻るボタン
-            pygame.draw.rect(self.screen, (200, 200, 200), self.back_to_title_button)
-            pygame.draw.rect(self.screen, self.BLACK, self.back_to_title_button, 2)
+            # 戻るボタン - 画面下部に配置
+            back_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)
+            pygame.draw.rect(self.screen, (200, 200, 200), back_button)
+            pygame.draw.rect(self.screen, self.BLACK, back_button, 2)
             back_text = self.large_font.render("戻る", True, self.BLACK)
-            self.screen.blit(back_text, (self.back_to_title_button.centerx - back_text.get_width() // 2, 
-                                        self.back_to_title_button.centery - back_text.get_height() // 2))
+            self.screen.blit(back_text, (back_button.centerx - back_text.get_width() // 2, 
+                                        back_button.centery - back_text.get_height() // 2))
     
     def draw_glossary(self):
         """用語集画面の描画"""
@@ -649,3 +650,15 @@ class UI:
         
         ai_text = self.small_font.render("AI", True, self.BLACK)
         self.screen.blit(ai_text, (bar_x + bar_width - ai_text.get_width(), bar_y + bar_height + 5))
+    def handle_glossary_back_button(self, pos):
+        """
+        用語集の戻るボタンがクリックされたかどうかを判定
+        
+        Args:
+            pos: クリック位置の座標
+            
+        Returns:
+            bool: ボタンがクリックされたかどうか
+        """
+        back_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)
+        return back_button.collidepoint(pos)

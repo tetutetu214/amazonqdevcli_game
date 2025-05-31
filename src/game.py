@@ -22,7 +22,7 @@ class Game:
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         
         # 日本語対応のタイトル設定
-        pygame.display.set_caption("GOGO囲碁".encode("utf-8").decode("utf-8"))
+        pygame.display.set_caption("GOGO囲碁")
         
         self.clock = pygame.time.Clock()
         self.state = Game.STATE_TITLE
@@ -77,7 +77,7 @@ class Game:
             elif self.ui.is_glossary_button_clicked(event.pos):
                 self.ui.show_glossary = True
             # 戻るボタンがクリックされたかチェック（用語集から戻る）
-            elif self.ui.show_glossary and self.ui.is_back_to_title_button_clicked(event.pos):
+            elif self.ui.show_glossary and self.ui.handle_glossary_back_button(event.pos):
                 self.ui.show_glossary = False
     
     def handle_game_event(self, event):
