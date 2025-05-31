@@ -56,7 +56,8 @@ class UI:
             self.small_font = pygame.font.SysFont(None, 18)
         
         # ボタンの定義
-        self.start_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
+        self.start_button = pygame.Rect(self.width // 2 - 100, self.height * 0.6, 200, 50)
+        self.glossary_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
         self.pass_button = pygame.Rect(self.width // 2 - 110, self.height - 70, 100, 40)
         self.resign_button = pygame.Rect(self.width // 2 + 10, self.height - 70, 100, 40)
         self.play_again_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
@@ -68,6 +69,9 @@ class UI:
         # ポップアップメッセージ
         self.popup_message = None
         self.popup_timer = 0
+        
+        # 画面状態
+        self.show_glossary = False
     
     def load_images(self):
         """画像リソースの読み込み"""
@@ -118,23 +122,80 @@ class UI:
             text = self.medium_font.render(line, True, self.BLACK)
             self.screen.blit(text, (self.width // 2 - text.get_width() // 2, self.height * 0.35 + i * 30))
         
-        # スタートボタン
-        pygame.draw.rect(self.screen, (200, 200, 200), self.start_button)
-        pygame.draw.rect(self.screen, self.BLACK, self.start_button, 2)
-        start_text = self.large_font.render("スタート", True, self.BLACK)
-        self.screen.blit(start_text, (self.start_button.centerx - start_text.get_width() // 2, 
-                                     self.start_button.centery - start_text.get_height() // 2))
+        if not self.show_glossary:
+            # スタートボタン
+            pygame.draw.rect(self.screen, (200, 200, 200), self.start_button)
+            pygame.draw.rect(self.screen, self.BLACK, self.start_button, 2)
+            start_text = self.large_font.render("対戦開始", True, self.BLACK)
+            self.screen.blit(start_text, (self.start_button.centerx - start_text.get_width() // 2, 
+                                        self.start_button.centery - start_text.get_height() // 2))
+            
+            # 用語集ボタン
+            pygame.draw.rect(self.screen, (200, 200, 200), self.glossary_button)
+            pygame.draw.rect(self.screen, self.BLACK, self.glossary_button, 2)
+            glossary_text = self.large_font.render("用語集", True, self.BLACK)
+            self.screen.blit(glossary_text, (self.glossary_button.centerx - glossary_text.get_width() // 2, 
+                                        self.glossary_button.centery - glossary_text.get_height() // 2))
+        else:
+            # 用語集画面
+            self.draw_glossary()
+            
+            # 戻るボタン
+            pygame.draw.rect(self.screen, (200, 200, 200), self.back_to_title_button)
+            pygame.draw.rect(self.screen, self.BLACK, self.back_to_title_button, 2)
+            back_text = self.large_font.render("戻る", True, self.BLACK)
+            self.screen.blit(back_text, (self.back_to_title_button.centerx - back_text.get_width() // 2, 
+                                        self.back_to_title_button.centery - back_text.get_height() // 2))
+    
+    def draw_glossary(self):
+        """用語集画面の描画"""
+        # 用語集タイトル
+        glossary_title = self.large_font.render("【囲碁用語集】", True, self.BLACK)
+        self.screen.blit(glossary_title, (self.width // 2 - glossary_title.get_width() // 2, self.height * 0.15))
         
-        # 用語集
+        # 用語の定義
         terms = [
-            "【用語集】",
-            "・確定陣地：完全に囲まれた自分の領域",
-            "・影響圏：将来的に自分の陣地になりそうな領域"
+            ("確定陣地", "完全に自分の石で囲まれた領域。相手が侵入できない安全な空点。"),
+            ("影響圏", "将来的に自分の陣地になりそうな領域。石から1〜2マス以内の空点。"),
+            ("争点", "黒と白の両方の影響圏が重なっている場所。重要な戦略ポイント。"),
+            ("アタリ", "石または石のグループが取られる一歩手前の状態。呼吸点が1つだけの状態。"),
+            ("コウ", "同じ局面が繰り返されるのを防ぐルール。直前に取られた石と同じ場所に石を置けない。"),
+            ("呼吸点", "石または石のグループに隣接する空点。呼吸点がなくなると石は取られる。"),
+            ("自殺手", "置いた瞬間に自分の石が呼吸点を失って取られてしまう手。禁じ手。"),
+            ("眼", "石のグループ内の空点。2つ以上の眼があると、そのグループは生きる。"),
+            ("シチョウ", "石を連続してアタリにしていく手筋。逃げる側が盤端に追い詰められると取られる。"),
+            ("コミ", "先手（黒）の有利を相殺するために後手（白）に与えられる得点。本ゲームでは3.5目。")
         ]
         
-        for i, term in enumerate(terms):
-            text = self.small_font.render(term, True, self.BLACK)
-            self.screen.blit(text, (self.width // 2 - text.get_width() // 2, self.height * 0.85 + i * 25))
+        # 用語を表示
+        y_offset = self.height * 0.25
+        for term, definition in terms:
+            # 用語（太字）
+            term_text = self.medium_font.render(term, True, self.BLACK)
+            self.screen.blit(term_text, (self.width * 0.15, y_offset))
+            
+            # 定義（複数行に分割して表示）
+            words = definition.split()
+            line = ""
+            line_height = self.small_font.get_height() + 5
+            for word in words:
+                test_line = line + word + " "
+                test_text = self.small_font.render(test_line, True, self.BLACK)
+                if test_text.get_width() > self.width * 0.7:
+                    # 行が長すぎる場合は改行
+                    text = self.small_font.render(line, True, self.BLACK)
+                    self.screen.blit(text, (self.width * 0.25, y_offset + line_height))
+                    line = word + " "
+                    y_offset += line_height
+                else:
+                    line = test_line
+            
+            # 最後の行を表示
+            if line:
+                text = self.small_font.render(line, True, self.BLACK)
+                self.screen.blit(text, (self.width * 0.25, y_offset + line_height))
+            
+            y_offset += line_height * 2
     
     def draw_game_screen(self, player_turn, ai_thinking):
         """
@@ -509,3 +570,14 @@ class UI:
                 self.screen.blit(popup_surface, (self.width // 2 - 150, self.height // 2 - 25))
             else:
                 self.popup_message = None
+    def is_glossary_button_clicked(self, pos):
+        """
+        用語集ボタンがクリックされたかどうかを判定
+        
+        Args:
+            pos: クリック位置の座標
+            
+        Returns:
+            bool: ボタンがクリックされたかどうか
+        """
+        return self.glossary_button.collidepoint(pos)

@@ -73,6 +73,12 @@ class Game:
             if self.ui.is_start_button_clicked(event.pos):
                 self.state = Game.STATE_GAME
                 self.reset_game()
+            # 用語集ボタンがクリックされたかチェック
+            elif self.ui.is_glossary_button_clicked(event.pos):
+                self.ui.show_glossary = True
+            # 戻るボタンがクリックされたかチェック（用語集から戻る）
+            elif self.ui.show_glossary and self.ui.is_back_to_title_button_clicked(event.pos):
+                self.ui.show_glossary = False
     
     def handle_game_event(self, event):
         """ゲーム画面のイベント処理"""
