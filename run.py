@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 GOGO囲碁 ゲーム起動スクリプト
 """

@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 import pygame
 import os
-from board import Board
+from .board import Board
 
 class UI:
     """
@@ -41,10 +42,18 @@ class UI:
         
         # フォントの初期化
         pygame.font.init()
-        self.title_font = pygame.font.SysFont('notosanscjkjp', 48)
-        self.large_font = pygame.font.SysFont('notosanscjkjp', 36)
-        self.medium_font = pygame.font.SysFont('notosanscjkjp', 24)
-        self.small_font = pygame.font.SysFont('notosanscjkjp', 18)
+        try:
+            # Windowsの日本語フォントを使用
+            self.title_font = pygame.font.Font('/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf', 48)
+            self.large_font = pygame.font.Font('/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf', 36)
+            self.medium_font = pygame.font.Font('/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf', 24)
+            self.small_font = pygame.font.Font('/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf', 18)
+        except:
+            # フォントが見つからない場合はシステムフォントを使用
+            self.title_font = pygame.font.SysFont(None, 48)
+            self.large_font = pygame.font.SysFont(None, 36)
+            self.medium_font = pygame.font.SysFont(None, 24)
+            self.small_font = pygame.font.SysFont(None, 18)
         
         # ボタンの定義
         self.start_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)

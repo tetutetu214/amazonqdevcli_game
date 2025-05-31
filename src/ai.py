@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 import random
 import numpy as np
-from board import Board
+from .board import Board
 
 class AI:
     """

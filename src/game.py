@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 import pygame
 import sys
-from board import Board
-from ai import AI
-from ui import UI
+from .board import Board
+from .ai import AI
+from .ui import UI
 
 class Game:
     """
@@ -19,7 +20,9 @@ class Game:
         self.screen_width = 1200
         self.screen_height = 700
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-        pygame.display.set_caption("GOGO囲碁")
+        
+        # 日本語対応のタイトル設定
+        pygame.display.set_caption("GOGO囲碁".encode("utf-8").decode("utf-8"))
         
         self.clock = pygame.time.Clock()
         self.state = Game.STATE_TITLE
