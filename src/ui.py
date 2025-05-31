@@ -105,6 +105,8 @@ class UI:
     
     def draw_title_screen(self):
         """タイトル画面の描画"""
+        # 背景をクリア
+        self.screen.fill((0, 0, 0))  # 一度画面を黒でクリア
         # 背景
         self.screen.blit(self.background_img, (0, 0))
         
@@ -112,17 +114,17 @@ class UI:
         title_text = self.title_font.render("GOGO囲碁", True, self.BLACK)
         self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.2))
         
-        # ゲーム説明
-        description = [
-            "初心者でも陣地の概念を視覚的に理解できる囲碁ゲームです。",
-            "石を置くと自分の陣地が色分けされ、どこが良い手かが一目で分かります。"
-        ]
-        
-        for i, line in enumerate(description):
-            text = self.medium_font.render(line, True, self.BLACK)
-            self.screen.blit(text, (self.width // 2 - text.get_width() // 2, self.height * 0.35 + i * 30))
-        
         if not self.show_glossary:
+            # ゲーム説明
+            description = [
+                "初心者でも陣地の概念を視覚的に理解できる囲碁ゲームです。",
+                "石を置くと自分の陣地が色分けされ、どこが良い手かが一目で分かります。"
+            ]
+            
+            for i, line in enumerate(description):
+                text = self.medium_font.render(line, True, self.BLACK)
+                self.screen.blit(text, (self.width // 2 - text.get_width() // 2, self.height * 0.35 + i * 30))
+            
             # スタートボタン
             pygame.draw.rect(self.screen, (200, 200, 200), self.start_button)
             pygame.draw.rect(self.screen, self.BLACK, self.start_button, 2)
@@ -410,10 +412,12 @@ class UI:
         # AI思考中表示
         if ai_thinking:
             thinking_text = self.medium_font.render("AI思考中...", True, (200, 0, 0))
-            self.screen.blit(thinking_text, (self.width * 0.8, self.height * 0.6))
+            self.screen.blit(thinking_text, (self.width * 0.8, self.height * 0.7))  # 位置を下に移動
     
     def draw_result_screen(self):
         """結果画面の描画"""
+        # 背景をクリア
+        self.screen.fill((0, 0, 0))  # 一度画面を黒でクリア
         # 背景
         self.screen.blit(self.background_img, (0, 0))
         

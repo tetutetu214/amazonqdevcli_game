@@ -105,7 +105,8 @@ class Game:
             elif self.ui.is_pass_button_clicked(event.pos):
                 self.consecutive_passes += 1
                 self.player_turn = False
-                self.check_game_end()
+                if self.check_game_end():  # ゲーム終了条件を確認
+                    return  # ゲームが終了した場合は処理を終了
                 if not self.player_turn:
                     self.ai_thinking = True
                     self.ai_think_start_time = pygame.time.get_ticks()
@@ -156,7 +157,8 @@ class Game:
             self.consecutive_passes += 1
         
         self.player_turn = True
-        self.check_game_end()
+        if self.check_game_end():  # ゲーム終了条件を確認
+            return  # ゲームが終了した場合は処理を終了
     
     def check_game_end(self):
         """ゲーム終了条件のチェック"""
@@ -170,6 +172,8 @@ class Game:
                 self.board.winner = Board.BLACK
             else:
                 self.board.winner = Board.WHITE
+            return True  # ゲーム終了を明示的に返す
+        return False  # ゲーム継続
     
     def render(self):
         """画面描画"""
