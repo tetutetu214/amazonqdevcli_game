@@ -61,7 +61,7 @@ class UI:
         self.pass_button = pygame.Rect(self.width // 2 - 110, self.height - 70, 100, 40)
         self.resign_button = pygame.Rect(self.width // 2 + 10, self.height - 70, 100, 40)
         self.play_again_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
-        self.back_to_title_button = pygame.Rect(self.width // 2 - 100, self.height * 0.8, 200, 50)
+        self.back_to_title_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)  # 位置を下に移動
         
         # 画像の読み込み
         self.load_images()
@@ -210,6 +210,9 @@ class UI:
         # 背景
         self.screen.blit(self.background_img, (0, 0))
         
+        # 優位性グラフの描画（画面上部に配置）
+        self.draw_advantage_bar()
+        
         # 盤面の描画
         self.draw_board()
         
@@ -218,9 +221,6 @@ class UI:
         
         # AI情報（右側）
         self.draw_ai_info(ai_thinking)
-        
-        # 優位性グラフの描画
-        self.draw_advantage_bar()
         
         # パスボタン
         pygame.draw.rect(self.screen, (200, 200, 200), self.pass_button)
@@ -594,7 +594,7 @@ class UI:
         bar_width = self.width * 0.6
         bar_height = 30
         bar_x = self.width * 0.2
-        bar_y = self.height - 120  # パスボタンの上に配置
+        bar_y = self.height * 0.1  # 画面上部に配置
         
         # 黒と白の得点を計算（コミを含む）
         black_score = self.board.calculate_score(Board.BLACK)
