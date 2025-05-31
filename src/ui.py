@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import pygame
 import os
+import random
+import math
 from .board import Board
 
 class UI:
@@ -43,25 +45,40 @@ class UI:
         # フォントの初期化
         pygame.font.init()
         try:
-            # Windowsの日本語フォントを使用
-            self.title_font = pygame.font.Font('/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf', 48)
-            self.large_font = pygame.font.Font('/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf', 36)
-            self.medium_font = pygame.font.Font('/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf', 24)
-            self.small_font = pygame.font.Font('/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf', 18)
+            # 和風フォントを使用
+            font_paths = [
+                '/mnt/c/Windows/Fonts/HGRSKP.TTC',  # HG行書体
+                '/mnt/c/Windows/Fonts/HGRGM.TTC',   # HG正楷書体
+                '/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf'  # Noto Sans JP
+            ]
+            
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    self.title_font = pygame.font.Font(font_path, 60)
+                    self.large_font = pygame.font.Font(font_path, 36)
+                    self.medium_font = pygame.font.Font(font_path, 24)
+                    self.small_font = pygame.font.Font(font_path, 18)
+                    break
+            else:
+                # フォントが見つからない場合はシステムフォントを使用
+                self.title_font = pygame.font.SysFont(None, 60)
+                self.large_font = pygame.font.SysFont(None, 36)
+                self.medium_font = pygame.font.SysFont(None, 24)
+                self.small_font = pygame.font.SysFont(None, 18)
         except:
             # フォントが見つからない場合はシステムフォントを使用
-            self.title_font = pygame.font.SysFont(None, 48)
+            self.title_font = pygame.font.SysFont(None, 60)
             self.large_font = pygame.font.SysFont(None, 36)
             self.medium_font = pygame.font.SysFont(None, 24)
             self.small_font = pygame.font.SysFont(None, 18)
         
         # ボタンの定義
-        self.start_button = pygame.Rect(self.width // 2 - 100, self.height * 0.6, 200, 50)
-        self.glossary_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
+        self.start_button = pygame.Rect(self.width // 2 - 100, self.height * 0.5, 200, 50)
+        self.glossary_button = pygame.Rect(self.width // 2 - 100, self.height * 0.6, 200, 50)
         self.pass_button = pygame.Rect(self.width // 2 - 110, self.height - 70, 100, 40)
         self.resign_button = pygame.Rect(self.width // 2 + 10, self.height - 70, 100, 40)
         self.play_again_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
-        self.back_to_title_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)  # 位置を下に移動
+        self.back_to_title_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)
         
         # 画像の読み込み
         self.load_images()
@@ -95,13 +112,33 @@ class UI:
     
     def create_default_images(self):
         """デフォルトの画像を作成"""
-        # デフォルトの背景（畳風）
+        # デフォルトの背景（和紙風）
         self.background_img = pygame.Surface((self.width, self.height))
-        self.background_img.fill((240, 230, 190))  # 薄い黄土色
+        self.background_img.fill((245, 240, 230))  # 薄い和紙色
+        
+        # 背景に和風の模様を追加
+        for i in range(100):
+            x = random.randint(0, self.width)
+            y = random.randint(0, self.height)
+            radius = random.randint(1, 3)
+            color = (230, 225, 215)  # 少し暗い和紙の色
+            pygame.draw.circle(self.background_img, color, (x, y), radius)
         
         # デフォルトの盤面（木目調）
         self.board_img = pygame.Surface((int(self.board_size), int(self.board_size)))
-        self.board_img.fill(self.BOARD_COLOR)
+        self.board_img.fill((219, 181, 113))  # 碁盤の色
+        
+        # 木目模様を追加
+        for i in range(50):
+            x1 = random.randint(0, int(self.board_size))
+            y1 = random.randint(0, int(self.board_size))
+            length = random.randint(20, 100)
+            thickness = random.randint(1, 3)
+            angle = random.uniform(0, math.pi)
+            x2 = x1 + int(length * math.cos(angle))
+            y2 = y1 + int(length * math.sin(angle))
+            color = (200, 160, 100)  # 木目の色
+            pygame.draw.line(self.board_img, color, (x1, y1), (x2, y2), thickness)
     
     def draw_title_screen(self):
         """タイトル画面の描画"""
@@ -112,28 +149,18 @@ class UI:
         
         # タイトル
         title_text = self.title_font.render("GOGO囲碁", True, self.BLACK)
-        self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.2))
+        self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.3))
         
         if not self.show_glossary:
-            # ゲーム説明
-            description = [
-                "初心者でも陣地の概念を視覚的に理解できる囲碁ゲームです。",
-                "石を置くと自分の陣地が色分けされ、どこが良い手かが一目で分かります。"
-            ]
-            
-            for i, line in enumerate(description):
-                text = self.medium_font.render(line, True, self.BLACK)
-                self.screen.blit(text, (self.width // 2 - text.get_width() // 2, self.height * 0.35 + i * 30))
-            
             # スタートボタン
-            pygame.draw.rect(self.screen, (200, 200, 200), self.start_button)
+            pygame.draw.rect(self.screen, (220, 210, 180), self.start_button)
             pygame.draw.rect(self.screen, self.BLACK, self.start_button, 2)
             start_text = self.large_font.render("対戦開始", True, self.BLACK)
             self.screen.blit(start_text, (self.start_button.centerx - start_text.get_width() // 2, 
                                         self.start_button.centery - start_text.get_height() // 2))
             
             # 用語集ボタン
-            pygame.draw.rect(self.screen, (200, 200, 200), self.glossary_button)
+            pygame.draw.rect(self.screen, (220, 210, 180), self.glossary_button)
             pygame.draw.rect(self.screen, self.BLACK, self.glossary_button, 2)
             glossary_text = self.large_font.render("用語集", True, self.BLACK)
             self.screen.blit(glossary_text, (self.glossary_button.centerx - glossary_text.get_width() // 2, 
@@ -141,20 +168,15 @@ class UI:
         else:
             # 用語集画面
             self.draw_glossary()
-            
-            # 戻るボタン - 画面下部に配置
-            back_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)
-            pygame.draw.rect(self.screen, (200, 200, 200), back_button)
-            pygame.draw.rect(self.screen, self.BLACK, back_button, 2)
-            back_text = self.large_font.render("戻る", True, self.BLACK)
-            self.screen.blit(back_text, (back_button.centerx - back_text.get_width() // 2, 
-                                        back_button.centery - back_text.get_height() // 2))
     
     def draw_glossary(self):
         """用語集画面の描画"""
+        # 背景に和紙風のテクスチャを描画
+        self.screen.fill((245, 240, 230))  # 薄い和紙色
+        
         # 用語集タイトル
-        glossary_title = self.large_font.render("【囲碁用語集】", True, self.BLACK)
-        self.screen.blit(glossary_title, (self.width // 2 - glossary_title.get_width() // 2, self.height * 0.15))
+        glossary_title = self.large_font.render("【囲碁用語集】", True, (80, 40, 0))
+        self.screen.blit(glossary_title, (self.width // 2 - glossary_title.get_width() // 2, self.height * 0.1))
         
         # 用語の定義
         terms = [
@@ -170,14 +192,76 @@ class UI:
             ("コミ", "先手（黒）の有利を相殺するために後手（白）に与えられる得点。本ゲームでは3.5目。")
         ]
         
-        # 用語を表示
-        y_offset = self.height * 0.25
-        for term, definition in terms:
-            # 用語（太字）
-            term_text = self.medium_font.render(term, True, self.BLACK)
-            self.screen.blit(term_text, (self.width * 0.15, y_offset))
+        # 表の枠を描画
+        table_x = self.width * 0.1
+        table_y = self.height * 0.2
+        table_width = self.width * 0.8
+        table_height = self.height * 0.6
+        cell_height = table_height / (len(terms) + 1)  # +1 for header
+        
+        # 表の背景
+        pygame.draw.rect(self.screen, (235, 225, 200), (table_x, table_y, table_width, table_height))
+        pygame.draw.rect(self.screen, (100, 60, 20), (table_x, table_y, table_width, table_height), 2)
+        
+        # ヘッダー行
+        header_bg_rect = pygame.Rect(table_x, table_y, table_width, cell_height)
+        pygame.draw.rect(self.screen, (200, 180, 140), header_bg_rect)
+        pygame.draw.line(self.screen, (100, 60, 20), (table_x, table_y + cell_height), 
+                        (table_x + table_width, table_y + cell_height), 2)
+        
+        # ヘッダーテキスト
+        term_header = self.medium_font.render("用語", True, (80, 40, 0))
+        self.screen.blit(term_header, (table_x + table_width * 0.1, table_y + cell_height/2 - term_header.get_height()/2))
+        
+        # 縦線
+        pygame.draw.line(self.screen, (100, 60, 20), (table_x + table_width * 0.25, table_y), 
+                        (table_x + table_width * 0.25, table_y + table_height), 2)
+        
+        desc_header = self.medium_font.render("説明", True, (80, 40, 0))
+        self.screen.blit(desc_header, (table_x + table_width * 0.3, table_y + cell_height/2 - desc_header.get_height()/2))
+        
+        # 各用語の行
+        for i, (term, definition) in enumerate(terms):
+            row_y = table_y + (i + 1) * cell_height
             
-            # 定義（複数行に分割して表示）
+            # 行の区切り線
+            pygame.draw.line(self.screen, (100, 60, 20), (table_x, row_y + cell_height), 
+                            (table_x + table_width, row_y + cell_height), 1)
+            
+            # 用語
+            term_text = self.medium_font.render(term, True, (80, 40, 0))
+            self.screen.blit(term_text, (table_x + table_width * 0.05, row_y + cell_height/2 - term_text.get_height()/2))
+            
+            # 説明（複数行に分割して表示）
+            words = definition.split()
+            line = ""
+            line_height = self.small_font.get_height() + 2
+            line_y = row_y + cell_height/2 - line_height/2
+            
+            for word in words:
+                test_line = line + word + " "
+                test_text = self.small_font.render(test_line, True, (80, 40, 0))
+                if test_text.get_width() > table_width * 0.7:
+                    # 行が長すぎる場合は改行
+                    text = self.small_font.render(line, True, (80, 40, 0))
+                    self.screen.blit(text, (table_x + table_width * 0.3, line_y))
+                    line = word + " "
+                    line_y += line_height
+                else:
+                    line = test_line
+            
+            # 最後の行を表示
+            if line:
+                text = self.small_font.render(line, True, (80, 40, 0))
+                self.screen.blit(text, (table_x + table_width * 0.3, line_y))
+        
+        # 戻るボタン - 用語集の下部に配置
+        back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 20, 200, 50)
+        pygame.draw.rect(self.screen, (220, 210, 180), back_button)
+        pygame.draw.rect(self.screen, (100, 60, 20), back_button, 2)
+        back_text = self.large_font.render("戻る", True, (80, 40, 0))
+        self.screen.blit(back_text, (back_button.centerx - back_text.get_width() // 2, 
+                                    back_button.centery - back_text.get_height() // 2))
             words = definition.split()
             line = ""
             line_height = self.small_font.get_height() + 5
@@ -660,5 +744,12 @@ class UI:
         Returns:
             bool: ボタンがクリックされたかどうか
         """
-        back_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)
+        # 用語集の表の位置を計算
+        table_x = self.width * 0.1
+        table_y = self.height * 0.2
+        table_width = self.width * 0.8
+        table_height = self.height * 0.6
+        
+        # 戻るボタンの位置
+        back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 20, 200, 50)
         return back_button.collidepoint(pos)
