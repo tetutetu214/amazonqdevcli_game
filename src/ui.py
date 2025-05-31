@@ -219,6 +219,9 @@ class UI:
         # AI情報（右側）
         self.draw_ai_info(ai_thinking)
         
+        # 優位性グラフの描画
+        self.draw_advantage_bar()
+        
         # パスボタン
         pygame.draw.rect(self.screen, (200, 200, 200), self.pass_button)
         pygame.draw.rect(self.screen, self.BLACK, self.pass_button, 2)
@@ -585,3 +588,64 @@ class UI:
             bool: ボタンがクリックされたかどうか
         """
         return self.glossary_button.collidepoint(pos)
+    def draw_advantage_bar(self):
+        """優位性を示す横棒グラフを描画"""
+        # グラフの位置とサイズ
+        bar_width = self.width * 0.6
+        bar_height = 30
+        bar_x = self.width * 0.2
+        bar_y = self.height - 120  # パスボタンの上に配置
+        
+        # 黒と白の得点を計算（コミを含む）
+        black_score = self.board.calculate_score(Board.BLACK)
+        white_score = self.board.calculate_score(Board.WHITE) + 3.5  # コミを加算
+        
+        # 総得点
+        total_score = black_score + white_score
+        if total_score == 0:  # 0除算を防ぐ
+            black_ratio = 0.5
+        else:
+            black_ratio = black_score / total_score
+        
+        # 黒の部分の幅を計算
+        black_width = bar_width * black_ratio
+        
+        # 背景（枠）を描画
+        pygame.draw.rect(self.screen, (200, 200, 200), (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(self.screen, self.BLACK, (bar_x, bar_y, bar_width, bar_height), 2)
+        
+        # 黒側（左側）
+        pygame.draw.rect(self.screen, (0, 0, 0, 200), (bar_x, bar_y, black_width, bar_height))
+        
+        # 白側（右側）
+        pygame.draw.rect(self.screen, (255, 255, 255, 200), (bar_x + black_width, bar_y, bar_width - black_width, bar_height))
+        
+        # 中央線
+        pygame.draw.line(self.screen, (100, 100, 100), 
+                         (bar_x + bar_width / 2, bar_y), 
+                         (bar_x + bar_width / 2, bar_y + bar_height), 2)
+        
+        # パーセンテージ表示
+        black_percent = int(black_ratio * 100)
+        white_percent = 100 - black_percent
+        
+        # 黒のパーセンテージ
+        black_text = self.small_font.render(f"{black_percent}%", True, self.WHITE)
+        if black_width > black_text.get_width() + 10:  # 十分なスペースがある場合
+            self.screen.blit(black_text, (bar_x + 10, bar_y + bar_height/2 - black_text.get_height()/2))
+        
+        # 白のパーセンテージ
+        white_text = self.small_font.render(f"{white_percent}%", True, self.BLACK)
+        if bar_width - black_width > white_text.get_width() + 10:  # 十分なスペースがある場合
+            self.screen.blit(white_text, (bar_x + black_width + 10, bar_y + bar_height/2 - white_text.get_height()/2))
+        
+        # 優位性の説明テキスト
+        advantage_text = self.small_font.render("優位性", True, self.BLACK)
+        self.screen.blit(advantage_text, (bar_x, bar_y - 25))
+        
+        # プレイヤーとAIのラベル
+        player_text = self.small_font.render("プレイヤー", True, self.BLACK)
+        self.screen.blit(player_text, (bar_x, bar_y + bar_height + 5))
+        
+        ai_text = self.small_font.render("AI", True, self.BLACK)
+        self.screen.blit(ai_text, (bar_x + bar_width - ai_text.get_width(), bar_y + bar_height + 5))
