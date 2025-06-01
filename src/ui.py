@@ -668,36 +668,50 @@ class UI:
         """
         return self.glossary_button.collidepoint(pos)
     def draw_advantage_bar(self):
-        """優位性を示す横棒グラフを描画"""
-        # グラフの位置とサイズ
-        bar_width = self.width * 0.6
-        bar_height = 30
+        """優位性グラフの描画"""
+        # 黒の陣地と影響圏の数をカウント
+        black_territory = sum(sum(self.board.black_territory))
+        black_influence = sum(sum(self.board.black_influence))
+        
+        # 白の陣地と影響圏の数をカウント
+        white_territory = sum(sum(self.board.white_territory))
+        white_influence = sum(sum(self.board.white_influence))
+        
+        # 取った石の数も考慮
+        black_score = black_territory + self.board.black_captures
+        white_score = white_territory + self.board.white_captures + 3.5  # コミを加算
+        
+        # 優位性バーの描画位置とサイズ
         bar_x = self.width * 0.2
-        bar_y = self.height * 0.1  # 画面上部に配置
+        bar_y = self.height * 0.1
+        bar_width = self.width * 0.6
+        bar_height = 20
         
-        # 黒と白の得点を計算（コミを含む）
-        black_score = self.board.calculate_score(Board.BLACK)
-        white_score = self.board.calculate_score(Board.WHITE) + 3.5  # コミを加算
-        
-        # 総得点
-        total_score = black_score + white_score
-        if total_score == 0:  # 0除算を防ぐ
-            black_ratio = 0.5
-        else:
-            black_ratio = black_score / total_score
-        
-        # 黒の部分の幅を計算
-        black_width = bar_width * black_ratio
-        
-        # 背景（枠）を描画
+        # 背景（グレー）
         pygame.draw.rect(self.screen, (200, 200, 200), (bar_x, bar_y, bar_width, bar_height))
-        pygame.draw.rect(self.screen, self.BLACK, (bar_x, bar_y, bar_width, bar_height), 2)
         
-        # 黒側（左側）
-        pygame.draw.rect(self.screen, (0, 0, 0, 200), (bar_x, bar_y, black_width, bar_height))
+        # 中央線（均衡状態）
+        center_x = bar_x + bar_width / 2
+        pygame.draw.line(self.screen, (100, 100, 100), (center_x, bar_y - 5), (center_x, bar_y + bar_height + 5), 2)
         
-        # 白側（右側）
-        pygame.draw.rect(self.screen, (255, 255, 255, 200), (bar_x + black_width, bar_y, bar_width - black_width, bar_height))
+        # 優位性の計算（-1.0〜1.0の範囲、正が黒有利、負が白有利）
+        total_points = black_score + white_score
+        if total_points > 0:
+            advantage = (black_score - white_score) / total_points
+        else:
+            advantage = 0
+        
+        # 優位性バーの描画
+        if advantage > 0:  # 黒が有利
+            black_width = bar_width / 2 + (bar_width / 2) * advantage
+            pygame.draw.rect(self.screen, (50, 50, 50), (center_x - bar_width / 2, bar_y, black_width, bar_height))
+        else:  # 白が有利
+            white_width = bar_width / 2 - (bar_width / 2) * advantage
+            pygame.draw.rect(self.screen, (250, 250, 250), (center_x, bar_y, white_width, bar_height))
+        
+        # 優位性の数値表示
+        advantage_text = self.small_font.render(f"優位性: {'黒 +' if advantage > 0 else '白 +'}{abs(advantage):.2f}", True, self.BLACK)
+        self.screen.blit(advantage_text, (center_x - advantage_text.get_width() / 2, bar_y - 25))
         
         # 中央線
         pygame.draw.line(self.screen, (100, 100, 100), 
