@@ -21,6 +21,7 @@ class UI:
     RED = (255, 0, 0, 128)  # 白の確定陣地
     PINK = (255, 105, 180, 128)  # 白の影響圏
     GRAY = (128, 128, 128, 128)  # 重複領域
+    LAST_MOVE_MARKER = (255, 0, 0)  # 最後の手のマーカー
     
     def __init__(self, screen, board):
         """
@@ -80,6 +81,10 @@ class UI:
         self.play_again_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
         self.back_to_title_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)
         
+        # 先手後手選択ボタン
+        self.black_button = pygame.Rect(self.width // 2 - 150, self.height * 0.4, 120, 50)
+        self.white_button = pygame.Rect(self.width // 2 + 30, self.height * 0.4, 120, 50)
+        
         # 画像の読み込み
         self.load_images()
         
@@ -89,6 +94,9 @@ class UI:
         
         # 画面状態
         self.show_glossary = False
+        
+        # 最後の手の位置
+        self.last_move = None
     
     def load_images(self):
         """画像リソースの読み込み"""
@@ -149,15 +157,26 @@ class UI:
         
         # タイトル
         title_text = self.title_font.render("GOGO囲碁", True, self.BLACK)
-        self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.3))
+        self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.2))
         
         if not self.show_glossary:
-            # スタートボタン
-            pygame.draw.rect(self.screen, (220, 210, 180), self.start_button)
-            pygame.draw.rect(self.screen, self.BLACK, self.start_button, 2)
-            start_text = self.large_font.render("対戦開始", True, self.BLACK)
-            self.screen.blit(start_text, (self.start_button.centerx - start_text.get_width() // 2, 
-                                        self.start_button.centery - start_text.get_height() // 2))
+            # 先手後手選択テキスト
+            select_text = self.medium_font.render("先手・後手を選択してください", True, (80, 40, 0))
+            self.screen.blit(select_text, (self.width // 2 - select_text.get_width() // 2, self.height * 0.35))
+            
+            # 黒（先手）ボタン
+            pygame.draw.rect(self.screen, (50, 50, 50), self.black_button)
+            pygame.draw.rect(self.screen, self.BLACK, self.black_button, 2)
+            black_text = self.medium_font.render("黒（先手）", True, self.WHITE)
+            self.screen.blit(black_text, (self.black_button.centerx - black_text.get_width() // 2, 
+                                        self.black_button.centery - black_text.get_height() // 2))
+            
+            # 白（後手）ボタン
+            pygame.draw.rect(self.screen, (240, 240, 240), self.white_button)
+            pygame.draw.rect(self.screen, self.BLACK, self.white_button, 2)
+            white_text = self.medium_font.render("白（後手）", True, self.BLACK)
+            self.screen.blit(white_text, (self.white_button.centerx - white_text.get_width() // 2, 
+                                        self.white_button.centery - white_text.get_height() // 2))
             
             # 用語集ボタン
             pygame.draw.rect(self.screen, (220, 210, 180), self.glossary_button)
@@ -197,51 +216,76 @@ class UI:
         table_y = self.height * 0.2
         table_width = self.width * 0.8
         table_height = self.height * 0.6
-        cell_height = table_height / (len(terms) + 1)  # +1 for header
+        
+        # 各用語の高さを計算
+        term_heights = []
+        max_cell_height = 0
+        
+        for term, definition in terms:
+            # 説明テキストの行数を計算
+            words = definition.split()
+            line = ""
+            line_count = 1
+            
+            for word in words:
+                test_line = line + word + " "
+                test_text = self.small_font.render(test_line, True, (80, 40, 0))
+                if test_text.get_width() > table_width * 0.65:
+                    line = word + " "
+                    line_count += 1
+                else:
+                    line = test_line
+            
+            # 各用語の必要な高さを計算（最低でも1行分）
+            line_height = self.small_font.get_height() + 2
+            term_height = max(40, line_count * line_height + 10)  # 最低40ピクセル、または行数に応じた高さ
+            term_heights.append(term_height)
+            max_cell_height = max(max_cell_height, term_height)
         
         # 表の背景
         pygame.draw.rect(self.screen, (235, 225, 200), (table_x, table_y, table_width, table_height))
         pygame.draw.rect(self.screen, (100, 60, 20), (table_x, table_y, table_width, table_height), 2)
         
         # ヘッダー行
-        header_bg_rect = pygame.Rect(table_x, table_y, table_width, cell_height)
+        header_height = 40
+        header_bg_rect = pygame.Rect(table_x, table_y, table_width, header_height)
         pygame.draw.rect(self.screen, (200, 180, 140), header_bg_rect)
-        pygame.draw.line(self.screen, (100, 60, 20), (table_x, table_y + cell_height), 
-                        (table_x + table_width, table_y + cell_height), 2)
+        pygame.draw.line(self.screen, (100, 60, 20), (table_x, table_y + header_height), 
+                        (table_x + table_width, table_y + header_height), 2)
         
         # ヘッダーテキスト
         term_header = self.medium_font.render("用語", True, (80, 40, 0))
-        self.screen.blit(term_header, (table_x + table_width * 0.1, table_y + cell_height/2 - term_header.get_height()/2))
+        self.screen.blit(term_header, (table_x + table_width * 0.1, table_y + header_height/2 - term_header.get_height()/2))
         
         # 縦線
         pygame.draw.line(self.screen, (100, 60, 20), (table_x + table_width * 0.25, table_y), 
                         (table_x + table_width * 0.25, table_y + table_height), 2)
         
         desc_header = self.medium_font.render("説明", True, (80, 40, 0))
-        self.screen.blit(desc_header, (table_x + table_width * 0.3, table_y + cell_height/2 - desc_header.get_height()/2))
+        self.screen.blit(desc_header, (table_x + table_width * 0.3, table_y + header_height/2 - desc_header.get_height()/2))
         
         # 各用語の行
-        for i, (term, definition) in enumerate(terms):
-            row_y = table_y + (i + 1) * cell_height
-            
-            # 行の区切り線
-            pygame.draw.line(self.screen, (100, 60, 20), (table_x, row_y + cell_height), 
-                            (table_x + table_width, row_y + cell_height), 1)
+        current_y = table_y + header_height
+        
+        for i, ((term, definition), term_height) in enumerate(zip(terms, term_heights)):
+            # 行の背景（交互に色を変える）
+            if i % 2 == 0:
+                pygame.draw.rect(self.screen, (245, 240, 230), (table_x + 1, current_y, table_width - 2, term_height))
             
             # 用語
             term_text = self.medium_font.render(term, True, (80, 40, 0))
-            self.screen.blit(term_text, (table_x + table_width * 0.05, row_y + cell_height/2 - term_text.get_height()/2))
+            self.screen.blit(term_text, (table_x + table_width * 0.05, current_y + term_height/2 - term_text.get_height()/2))
             
             # 説明（複数行に分割して表示）
             words = definition.split()
             line = ""
             line_height = self.small_font.get_height() + 2
-            line_y = row_y + cell_height/2 - line_height/2
+            line_y = current_y + 5  # 上部に少し余白を設ける
             
             for word in words:
                 test_line = line + word + " "
                 test_text = self.small_font.render(test_line, True, (80, 40, 0))
-                if test_text.get_width() > table_width * 0.7:
+                if test_text.get_width() > table_width * 0.65:
                     # 行が長すぎる場合は改行
                     text = self.small_font.render(line, True, (80, 40, 0))
                     self.screen.blit(text, (table_x + table_width * 0.3, line_y))
@@ -254,6 +298,11 @@ class UI:
             if line:
                 text = self.small_font.render(line, True, (80, 40, 0))
                 self.screen.blit(text, (table_x + table_width * 0.3, line_y))
+            
+            # 行の区切り線
+            current_y += term_height
+            pygame.draw.line(self.screen, (100, 60, 20), (table_x, current_y), 
+                            (table_x + table_width, current_y), 1)
         
         # 戻るボタン - 用語集の下部に配置
         back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 20, 200, 50)
@@ -262,28 +311,6 @@ class UI:
         back_text = self.large_font.render("戻る", True, (80, 40, 0))
         self.screen.blit(back_text, (back_button.centerx - back_text.get_width() // 2, 
                                     back_button.centery - back_text.get_height() // 2))
-            words = definition.split()
-            line = ""
-            line_height = self.small_font.get_height() + 5
-            for word in words:
-                test_line = line + word + " "
-                test_text = self.small_font.render(test_line, True, self.BLACK)
-                if test_text.get_width() > self.width * 0.7:
-                    # 行が長すぎる場合は改行
-                    text = self.small_font.render(line, True, self.BLACK)
-                    self.screen.blit(text, (self.width * 0.25, y_offset + line_height))
-                    line = word + " "
-                    y_offset += line_height
-                else:
-                    line = test_line
-            
-            # 最後の行を表示
-            if line:
-                text = self.small_font.render(line, True, self.BLACK)
-                self.screen.blit(text, (self.width * 0.25, y_offset + line_height))
-            
-            y_offset += line_height * 2
-    
     def draw_game_screen(self, player_turn, ai_thinking):
         """
         ゲーム画面の描画
@@ -295,11 +322,11 @@ class UI:
         # 背景
         self.screen.blit(self.background_img, (0, 0))
         
-        # 優位性グラフの描画（画面上部に配置）
-        self.draw_advantage_bar()
-        
         # 盤面の描画
         self.draw_board()
+        
+        # 優位性グラフの描画（画面上部に配置）
+        self.draw_advantage_bar()
         
         # プレイヤー情報（左側）
         self.draw_player_info()
@@ -359,10 +386,17 @@ class UI:
             for x in range(self.board.size):
                 if self.board.board[y, x] != Board.EMPTY:
                     color = self.BLACK if self.board.board[y, x] == Board.BLACK else self.WHITE
-                    pygame.draw.circle(self.screen, color,
-                                      (int(self.board_x + self.board_margin + x * self.cell_size),
-                                       int(self.board_y + self.board_margin + y * self.cell_size)),
-                                      int(self.cell_size * 0.45))
+                    stone_x = int(self.board_x + self.board_margin + x * self.cell_size)
+                    stone_y = int(self.board_y + self.board_margin + y * self.cell_size)
+                    stone_radius = int(self.cell_size * 0.45)
+                    
+                    # 石を描画
+                    pygame.draw.circle(self.screen, color, (stone_x, stone_y), stone_radius)
+                    
+                    # 最後の手のマーカーを描画
+                    if self.last_move and self.last_move == (x, y):
+                        marker_radius = int(self.cell_size * 0.5)
+                        pygame.draw.circle(self.screen, self.LAST_MOVE_MARKER, (stone_x, stone_y), marker_radius, 2)
         
         # プレビューの描画
         mouse_pos = pygame.mouse.get_pos()
@@ -676,10 +710,10 @@ class UI:
     def draw_advantage_bar(self):
         """優位性を示す横棒グラフを描画"""
         # グラフの位置とサイズ
-        bar_width = self.width * 0.6
+        bar_width = self.width * 0.4
         bar_height = 30
-        bar_x = self.width * 0.2
-        bar_y = self.height * 0.1  # 画面上部に配置
+        bar_x = (self.width - bar_width) / 2
+        bar_y = 30  # 画面上部に配置
         
         # 黒と白の得点を計算（コミを含む）
         black_score = self.board.calculate_score(Board.BLACK)
@@ -695,7 +729,11 @@ class UI:
         # 黒の部分の幅を計算
         black_width = bar_width * black_ratio
         
-        # 背景（枠）を描画
+        # 背景（枠）を描画 - 半透明の背景を追加
+        bg_surface = pygame.Surface((bar_width + 4, bar_height + 4), pygame.SRCALPHA)
+        bg_surface.fill((255, 255, 255, 180))  # 半透明の白
+        self.screen.blit(bg_surface, (bar_x - 2, bar_y - 2))
+        
         pygame.draw.rect(self.screen, (200, 200, 200), (bar_x, bar_y, bar_width, bar_height))
         pygame.draw.rect(self.screen, self.BLACK, (bar_x, bar_y, bar_width, bar_height), 2)
         
@@ -753,3 +791,35 @@ class UI:
         # 戻るボタンの位置
         back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 20, 200, 50)
         return back_button.collidepoint(pos)
+    def is_black_button_clicked(self, pos):
+        """
+        黒（先手）ボタンがクリックされたかどうかを判定
+        
+        Args:
+            pos: クリック位置の座標
+            
+        Returns:
+            bool: ボタンがクリックされたかどうか
+        """
+        return self.black_button.collidepoint(pos)
+    
+    def is_white_button_clicked(self, pos):
+        """
+        白（後手）ボタンがクリックされたかどうかを判定
+        
+        Args:
+            pos: クリック位置の座標
+            
+        Returns:
+            bool: ボタンがクリックされたかどうか
+        """
+        return self.white_button.collidepoint(pos)
+        
+    def set_last_move(self, x, y):
+        """
+        最後の手の位置を設定
+        
+        Args:
+            x, y: 最後の手の座標
+        """
+        self.last_move = (x, y)

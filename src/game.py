@@ -34,6 +34,7 @@ class Game:
         
         # ゲーム状態変数
         self.player_turn = True  # True: プレイヤー(黒), False: AI(白)
+        self.player_is_black = True  # プレイヤーが黒石（先手）かどうか
         self.consecutive_passes = 0
         self.ai_thinking = False
         self.ai_think_start_time = 0
@@ -69,10 +70,21 @@ class Game:
     def handle_title_event(self, event):
         """タイトル画面のイベント処理"""
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # スタートボタンがクリックされたかチェック
-            if self.ui.is_start_button_clicked(event.pos):
+            # 黒（先手）ボタンがクリックされたかチェック
+            if self.ui.is_black_button_clicked(event.pos):
                 self.state = Game.STATE_GAME
+                self.player_is_black = True
+                self.player_turn = True
                 self.reset_game()
+            # 白（後手）ボタンがクリックされたかチェック
+            elif self.ui.is_white_button_clicked(event.pos):
+                self.state = Game.STATE_GAME
+                self.player_is_black = False
+                self.player_turn = False
+                self.reset_game()
+                # AIの手番から開始
+                self.ai_thinking = True
+                self.ai_think_start_time = pygame.time.get_ticks()
             # 用語集ボタンがクリックされたかチェック
             elif self.ui.is_glossary_button_clicked(event.pos):
                 self.ui.show_glossary = True
@@ -92,7 +104,9 @@ class Game:
                 x, y = board_pos
                 # 石を置く
                 if self.board.is_valid_move(x, y):
-                    self.board.place_stone(x, y, Board.BLACK)
+                    player_stone = Board.BLACK if self.player_is_black else Board.WHITE
+                    self.board.place_stone(x, y, player_stone)
+                    self.ui.set_last_move(x, y)  # 最後の手を記録
                     self.consecutive_passes = 0
                     self.player_turn = False
                     self.ai_thinking = True
@@ -114,7 +128,7 @@ class Game:
             # 投了ボタンがクリックされたかチェック
             elif self.ui.is_resign_button_clicked(event.pos):
                 self.state = Game.STATE_RESULT
-                self.board.winner = Board.WHITE  # AIの勝利
+                self.board.winner = Board.WHITE if self.player_is_black else Board.BLACK  # AIの勝利
     
     def handle_result_event(self, event):
         """結果画面のイベント処理"""
@@ -150,7 +164,9 @@ class Game:
         move = self.ai.get_move()
         if move:
             x, y = move
-            self.board.place_stone(x, y, Board.WHITE)
+            ai_stone = Board.WHITE if self.player_is_black else Board.BLACK
+            self.board.place_stone(x, y, ai_stone)
+            self.ui.set_last_move(x, y)  # 最後の手を記録
             self.consecutive_passes = 0
         else:
             # AIがパスする場合
@@ -187,9 +203,18 @@ class Game:
     def reset_game(self):
         """ゲームのリセット"""
         self.board.reset()
-        self.player_turn = True
+        self.ui.last_move = None  # 最後の手をリセット
+        
+        # プレイヤーが黒（先手）の場合
+        if self.player_is_black:
+            self.player_turn = True
+        # プレイヤーが白（後手）の場合
+        else:
+            self.player_turn = False
+            self.ai_thinking = True
+            self.ai_think_start_time = pygame.time.get_ticks()
+            
         self.consecutive_passes = 0
-        self.ai_thinking = False
 
 if __name__ == "__main__":
     game = Game()
