@@ -215,11 +215,11 @@ class UI:
         table_x = self.width * 0.1
         table_y = self.height * 0.2
         table_width = self.width * 0.8
-        table_height = self.height * 0.6
+        table_height = self.height * 0.55  # 高さを少し小さくして戻るボタン用のスペースを確保
         
         # 各用語の高さを計算
         term_heights = []
-        max_cell_height = 0
+        total_content_height = 0
         
         for term, definition in terms:
             # 説明テキストの行数を計算
@@ -230,7 +230,7 @@ class UI:
             for word in words:
                 test_line = line + word + " "
                 test_text = self.small_font.render(test_line, True, (80, 40, 0))
-                if test_text.get_width() > table_width * 0.65:
+                if test_text.get_width() > table_width * 0.6:  # 幅を少し狭くして余裕を持たせる
                     line = word + " "
                     line_count += 1
                 else:
@@ -240,14 +240,21 @@ class UI:
             line_height = self.small_font.get_height() + 2
             term_height = max(40, line_count * line_height + 10)  # 最低40ピクセル、または行数に応じた高さ
             term_heights.append(term_height)
-            max_cell_height = max(max_cell_height, term_height)
+            total_content_height += term_height
+        
+        # ヘッダーの高さ
+        header_height = 40
+        total_content_height += header_height
+        
+        # 表の高さが足りない場合は調整
+        if total_content_height > table_height:
+            table_height = min(total_content_height, self.height * 0.65)  # 画面の65%を超えないように
         
         # 表の背景
         pygame.draw.rect(self.screen, (235, 225, 200), (table_x, table_y, table_width, table_height))
         pygame.draw.rect(self.screen, (100, 60, 20), (table_x, table_y, table_width, table_height), 2)
         
         # ヘッダー行
-        header_height = 40
         header_bg_rect = pygame.Rect(table_x, table_y, table_width, header_height)
         pygame.draw.rect(self.screen, (200, 180, 140), header_bg_rect)
         pygame.draw.line(self.screen, (100, 60, 20), (table_x, table_y + header_height), 
@@ -285,7 +292,7 @@ class UI:
             for word in words:
                 test_line = line + word + " "
                 test_text = self.small_font.render(test_line, True, (80, 40, 0))
-                if test_text.get_width() > table_width * 0.65:
+                if test_text.get_width() > table_width * 0.6:  # 幅を少し狭くして余裕を持たせる
                     # 行が長すぎる場合は改行
                     text = self.small_font.render(line, True, (80, 40, 0))
                     self.screen.blit(text, (table_x + table_width * 0.3, line_y))
@@ -304,8 +311,8 @@ class UI:
             pygame.draw.line(self.screen, (100, 60, 20), (table_x, current_y), 
                             (table_x + table_width, current_y), 1)
         
-        # 戻るボタン - 用語集の下部に配置
-        back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 20, 200, 50)
+        # 戻るボタン - 用語集の下部に配置（十分な余白を確保）
+        back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 30, 200, 50)
         pygame.draw.rect(self.screen, (220, 210, 180), back_button)
         pygame.draw.rect(self.screen, (100, 60, 20), back_button, 2)
         back_text = self.large_font.render("戻る", True, (80, 40, 0))
@@ -786,10 +793,10 @@ class UI:
         table_x = self.width * 0.1
         table_y = self.height * 0.2
         table_width = self.width * 0.8
-        table_height = self.height * 0.6
+        table_height = self.height * 0.55
         
         # 戻るボタンの位置
-        back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 20, 200, 50)
+        back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 30, 200, 50)
         return back_button.collidepoint(pos)
     def is_black_button_clicked(self, pos):
         """
