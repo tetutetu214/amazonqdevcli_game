@@ -87,7 +87,7 @@ class Board:
         
         # 自殺手のチェック
         group = self.find_group(x, y)
-        if not self.has_liberty(group):
+        if not self.has_liberty(group) and not captured:  # 石を取った場合は自殺手にならない
             # 自分の石を元に戻す
             self.board[y, x] = Board.EMPTY
             return False
@@ -511,31 +511,72 @@ class Board:
         
         # 自殺手チェック（仮に石を置いてみる）
         temp_board = self.board.copy()
-        temp_board[y, x] = Board.BLACK
+        temp_ko = self.ko
+        temp_board[y, x] = Board.BLACK  # 黒石を仮に置く
         
         # 隣接する相手の石を取れるかチェック
         can_capture = False
         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             nx, ny = x + dx, y + dy
             if 0 <= nx < self.size and 0 <= ny < self.size and temp_board[ny, nx] == Board.WHITE:
-                group = self.find_group(nx, ny)
-                if not self.has_liberty(group):
+                # 仮のグループを作成
+                temp_group = []
+                temp_visited = np.zeros((self.size, self.size), dtype=bool)
+                temp_queue = deque([(nx, ny)])
+                temp_visited[ny, nx] = True
+                
+                while temp_queue:
+                    cx, cy = temp_queue.popleft()
+                    temp_group.append((cx, cy))
+                    
+                    for ndx, ndy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+                        nnx, nny = cx + ndx, cy + ndy
+                        if 0 <= nnx < self.size and 0 <= nny < self.size and not temp_visited[nny, nnx] and temp_board[nny, nnx] == Board.WHITE:
+                            temp_queue.append((nnx, nny))
+                            temp_visited[nny, nnx] = True
+                
+                # 呼吸点があるかチェック
+                has_liberty = False
+                for gx, gy in temp_group:
+                    for gdx, gdy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+                        gnx, gny = gx + gdx, gy + gdy
+                        if 0 <= gnx < self.size and 0 <= gny < self.size and temp_board[gny, gnx] == Board.EMPTY:
+                            has_liberty = True
+                            break
+                    if has_liberty:
+                        break
+                
+                if not has_liberty:
                     can_capture = True
                     break
         
         # 自分の石のグループが呼吸点を持つかチェック
+        # 仮のグループを作成
+        temp_group = []
+        temp_visited = np.zeros((self.size, self.size), dtype=bool)
+        temp_queue = deque([(x, y)])
+        temp_visited[y, x] = True
+        
+        while temp_queue:
+            cx, cy = temp_queue.popleft()
+            temp_group.append((cx, cy))
+            
+            for ndx, ndy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+                nnx, nny = cx + ndx, cy + ndy
+                if 0 <= nnx < self.size and 0 <= nny < self.size and not temp_visited[nny, nnx] and temp_board[nny, nnx] == Board.BLACK:
+                    temp_queue.append((nnx, nny))
+                    temp_visited[nny, nnx] = True
+        
+        # 呼吸点があるかチェック
         has_liberty = False
-        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < self.size and 0 <= ny < self.size:
-                if temp_board[ny, nx] == Board.EMPTY:
+        for gx, gy in temp_group:
+            for gdx, gdy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+                gnx, gny = gx + gdx, gy + gdy
+                if 0 <= gnx < self.size and 0 <= gny < self.size and temp_board[gny, gnx] == Board.EMPTY:
                     has_liberty = True
                     break
-                elif temp_board[ny, nx] == Board.BLACK:
-                    group = self.find_group(nx, ny)
-                    if self.has_liberty(group):
-                        has_liberty = True
-                        break
+            if has_liberty:
+                break
         
         if not has_liberty and not can_capture:
             return "自殺手です"
