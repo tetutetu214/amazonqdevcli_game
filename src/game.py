@@ -117,13 +117,27 @@ class Game:
             
             # パスボタンがクリックされたかチェック
             elif self.ui.is_pass_button_clicked(event.pos):
+                print("プレイヤーがパスしました")
                 self.consecutive_passes += 1
-                self.player_turn = False
-                if self.check_game_end():  # ゲーム終了条件を確認
+                print(f"連続パス数: {self.consecutive_passes}")
+                
+                # ゲーム終了条件を確認
+                if self.consecutive_passes >= 2:
+                    print("連続パスによりゲーム終了")
+                    self.state = Game.STATE_RESULT
+                    # 勝敗判定
+                    black_score = self.board.calculate_score(Board.BLACK)
+                    white_score = self.board.calculate_score(Board.WHITE) + 3.5  # コミ
+                    
+                    if black_score > white_score:
+                        self.board.winner = Board.BLACK
+                    else:
+                        self.board.winner = Board.WHITE
                     return  # ゲームが終了した場合は処理を終了
-                if not self.player_turn:
-                    self.ai_thinking = True
-                    self.ai_think_start_time = pygame.time.get_ticks()
+                
+                self.player_turn = False
+                self.ai_thinking = True
+                self.ai_think_start_time = pygame.time.get_ticks()
             
             # 投了ボタンがクリックされたかチェック
             elif self.ui.is_resign_button_clicked(event.pos):
@@ -158,6 +172,10 @@ class Game:
                 board_pos = self.ui.get_board_position(mouse_pos)
                 if board_pos:
                     self.board.update_preview(*board_pos)
+            
+            # デバッグ情報（コンソールに連続パス数を表示）
+            if self.consecutive_passes > 0:
+                print(f"連続パス数: {self.consecutive_passes}")
     
     def ai_move(self):
         """AIの手を処理"""
@@ -171,9 +189,11 @@ class Game:
         else:
             # AIがパスする場合
             self.consecutive_passes += 1
+            print(f"AIがパスしました。連続パス数: {self.consecutive_passes}")
         
         self.player_turn = True
         if self.check_game_end():  # ゲーム終了条件を確認
+            print("ゲーム終了条件を満たしました")
             return  # ゲームが終了した場合は処理を終了
     
     def check_game_end(self):
