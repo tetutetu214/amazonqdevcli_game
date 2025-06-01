@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 from collections import deque
+from src.life_death import LifeDeathAnalyzer
 
 class Board:
     """
@@ -24,6 +24,7 @@ class Board:
         """
         self.size = size
         self.reset()
+        self.life_death_analyzer = LifeDeathAnalyzer(self)
     
     def reset(self):
         """盤面をリセット"""
@@ -35,6 +36,9 @@ class Board:
         self.white_territory = np.zeros((self.size, self.size), dtype=bool)  # 確定陣地
         self.black_influence = np.zeros((self.size, self.size), dtype=bool)  # 影響圏
         self.white_influence = np.zeros((self.size, self.size), dtype=bool)  # 影響圏
+        
+        # 生死判定情報
+        self.stone_safety = np.zeros((self.size, self.size), dtype=int)  # 石の安全度
         
         # 取った石のカウント
         self.black_captures = 0
@@ -49,9 +53,14 @@ class Board:
         self.preview_white_territory = None
         self.preview_black_influence = None
         self.preview_white_influence = None
+        self.preview_stone_safety = None
         
         # 勝者
         self.winner = None
+        
+        # 生死判定アナライザーを更新
+        if hasattr(self, 'life_death_analyzer'):
+            self.life_death_analyzer = LifeDeathAnalyzer(self)
     
     def place_stone(self, x, y, color):
         """
@@ -199,6 +208,35 @@ class Board:
         
         # 影響圏の計算
         self.black_influence, self.white_influence = self.calculate_influence()
+        
+        # 石の安全度を更新
+        self.update_stone_safety()
+    
+    def update_stone_safety(self):
+        """石の安全度を更新"""
+        # 安全度をリセット
+        self.stone_safety = np.zeros((self.size, self.size), dtype=int)
+        
+        # 黒石の安全度を計算
+        for y in range(self.size):
+            for x in range(self.size):
+                if self.board[y, x] == Board.BLACK:
+                    # まだ計算していない場合のみ
+                    if self.stone_safety[y, x] == 0:
+                        group = self.find_group(x, y)
+                        safety = self.life_death_analyzer.calculate_group_safety(group)
+                        # グループ全体に安全度を設定
+                        for gx, gy in group:
+                            self.stone_safety[gy, gx] = safety
+                
+                elif self.board[y, x] == Board.WHITE:
+                    # まだ計算していない場合のみ
+                    if self.stone_safety[y, x] == 0:
+                        group = self.find_group(x, y)
+                        safety = self.life_death_analyzer.calculate_group_safety(group)
+                        # グループ全体に安全度を設定
+                        for gx, gy in group:
+                            self.stone_safety[gy, gx] = safety
     
     def calculate_territories(self):
         """
@@ -331,6 +369,7 @@ class Board:
         """
         if not self.is_valid_move(x, y):
             self.preview_board = None
+            self.preview_stone_safety = None
             return
         
         # 現在の盤面をコピー
@@ -345,6 +384,55 @@ class Board:
         self.preview_white_territory = preview_white_territory
         self.preview_black_influence = preview_black_influence
         self.preview_white_influence = preview_white_influence
+        
+        # プレビュー用の安全度計算
+        self.preview_stone_safety = self.calculate_preview_stone_safety()
+        
+        # 石を置いた場合の取られるまでの手数を予測
+        self.capture_moves = self.life_death_analyzer.predict_capture_sequence(x, y, Board.BLACK)
+    
+    def calculate_preview_stone_safety(self):
+        """
+        プレビュー用の石の安全度を計算
+        
+        Returns:
+            numpy.ndarray: 石の安全度
+        """
+        if self.preview_board is None:
+            return self.stone_safety.copy()
+        
+        # 安全度をリセット
+        preview_stone_safety = np.zeros((self.size, self.size), dtype=int)
+        
+        # 一時的に盤面を置き換え
+        original_board = self.board
+        self.board = self.preview_board
+        
+        # 黒石の安全度を計算
+        for y in range(self.size):
+            for x in range(self.size):
+                if self.board[y, x] == Board.BLACK:
+                    # まだ計算していない場合のみ
+                    if preview_stone_safety[y, x] == 0:
+                        group = self.find_group(x, y)
+                        safety = self.life_death_analyzer.calculate_group_safety(group)
+                        # グループ全体に安全度を設定
+                        for gx, gy in group:
+                            preview_stone_safety[gy, gx] = safety
+                
+                elif self.board[y, x] == Board.WHITE:
+                    # まだ計算していない場合のみ
+                    if preview_stone_safety[y, x] == 0:
+                        group = self.find_group(x, y)
+                        safety = self.life_death_analyzer.calculate_group_safety(group)
+                        # グループ全体に安全度を設定
+                        for gx, gy in group:
+                            preview_stone_safety[gy, gx] = safety
+        
+        # 盤面を元に戻す
+        self.board = original_board
+        
+        return preview_stone_safety
     
     def calculate_preview_territories(self):
         """
@@ -590,4 +678,60 @@ class Board:
         if not has_liberty and not can_capture:
             return "自殺手です"
         
+        # 生死判定による警告
+        capture_moves = self.life_death_analyzer.predict_capture_sequence(x, y, Board.BLACK)
+        if capture_moves > 0 and capture_moves <= 3:
+            return f"{capture_moves}手で取られる可能性があります"
+        
         return "有効な手です"
+    
+    # 生死判定関連のメソッド
+    def count_eyes(self, group):
+        """
+        石グループの眼の数を数える
+        
+        Args:
+            group: 石のグループ（座標のリスト）
+            
+        Returns:
+            int: 眼の数
+        """
+        return self.life_death_analyzer.count_eyes(group)
+    
+    def calculate_group_safety(self, group):
+        """
+        石グループの安全度を計算
+        
+        Args:
+            group: 石のグループ（座標のリスト）
+            
+        Returns:
+            int: 安全度（0:死確定 〜 3:安全）
+        """
+        return self.life_death_analyzer.calculate_group_safety(group)
+    
+    def predict_capture_sequence(self, x, y, color, depth=3):
+        """
+        指定位置に石を置いた場合の取られるまでの手数を予測
+        
+        Args:
+            x, y: 石を置く位置の座標
+            color: 石の色
+            depth: 読みの深さ
+            
+        Returns:
+            int: 取られるまでの手数（-1は取れないことを示す）
+        """
+        return self.life_death_analyzer.predict_capture_sequence(x, y, color, depth)
+    
+    def is_alive(self, group):
+        """
+        石グループが生きているかどうかを判定
+        
+        Args:
+            group: 石のグループ（座標のリスト）
+            
+        Returns:
+            bool: 生きているかどうか
+        """
+        return self.life_death_analyzer.is_alive(group)
