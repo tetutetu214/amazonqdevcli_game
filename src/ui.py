@@ -75,7 +75,6 @@ class UI:
         
         # ボタンの定義
         self.start_button = pygame.Rect(self.width // 2 - 100, self.height * 0.5, 200, 50)
-        self.glossary_button = pygame.Rect(self.width // 2 - 100, self.height * 0.6, 200, 50)
         self.pass_button = pygame.Rect(self.width // 2 - 110, self.height - 70, 100, 40)
         self.resign_button = pygame.Rect(self.width // 2 + 10, self.height - 70, 100, 40)
         self.play_again_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
@@ -91,9 +90,6 @@ class UI:
         # ポップアップメッセージ
         self.popup_message = None
         self.popup_timer = 0
-        
-        # 画面状態
-        self.show_glossary = False
         
         # 最後の手の位置
         self.last_move = None
@@ -159,165 +155,25 @@ class UI:
         title_text = self.title_font.render("GOGO囲碁", True, self.BLACK)
         self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.2))
         
-        if not self.show_glossary:
-            # 先手後手選択テキスト
-            select_text = self.medium_font.render("先手・後手を選択してください", True, (80, 40, 0))
-            self.screen.blit(select_text, (self.width // 2 - select_text.get_width() // 2, self.height * 0.35))
-            
-            # 黒（先手）ボタン
-            pygame.draw.rect(self.screen, (50, 50, 50), self.black_button)
-            pygame.draw.rect(self.screen, self.BLACK, self.black_button, 2)
-            black_text = self.medium_font.render("黒（先手）", True, self.WHITE)
-            self.screen.blit(black_text, (self.black_button.centerx - black_text.get_width() // 2, 
-                                        self.black_button.centery - black_text.get_height() // 2))
-            
-            # 白（後手）ボタン
-            pygame.draw.rect(self.screen, (240, 240, 240), self.white_button)
-            pygame.draw.rect(self.screen, self.BLACK, self.white_button, 2)
-            white_text = self.medium_font.render("白（後手）", True, self.BLACK)
-            self.screen.blit(white_text, (self.white_button.centerx - white_text.get_width() // 2, 
-                                        self.white_button.centery - white_text.get_height() // 2))
-            
-            # 用語集ボタン
-            pygame.draw.rect(self.screen, (220, 210, 180), self.glossary_button)
-            pygame.draw.rect(self.screen, self.BLACK, self.glossary_button, 2)
-            glossary_text = self.large_font.render("用語集", True, self.BLACK)
-            self.screen.blit(glossary_text, (self.glossary_button.centerx - glossary_text.get_width() // 2, 
-                                        self.glossary_button.centery - glossary_text.get_height() // 2))
-        else:
-            # 用語集画面
-            self.draw_glossary()
+        # 先手後手選択テキスト
+        select_text = self.medium_font.render("先手・後手を選択してください", True, (80, 40, 0))
+        self.screen.blit(select_text, (self.width // 2 - select_text.get_width() // 2, self.height * 0.35))
+        
+        # 黒（先手）ボタン
+        pygame.draw.rect(self.screen, (50, 50, 50), self.black_button)
+        pygame.draw.rect(self.screen, self.BLACK, self.black_button, 2)
+        black_text = self.medium_font.render("黒（先手）", True, self.WHITE)
+        self.screen.blit(black_text, (self.black_button.centerx - black_text.get_width() // 2, 
+                                    self.black_button.centery - black_text.get_height() // 2))
+        
+        # 白（後手）ボタン
+        pygame.draw.rect(self.screen, (240, 240, 240), self.white_button)
+        pygame.draw.rect(self.screen, self.BLACK, self.white_button, 2)
+        white_text = self.medium_font.render("白（後手）", True, self.BLACK)
+        self.screen.blit(white_text, (self.white_button.centerx - white_text.get_width() // 2, 
+                                    self.white_button.centery - white_text.get_height() // 2))
     
-    def draw_glossary(self):
-        """用語集画面の描画"""
-        # 背景に和紙風のテクスチャを描画
-        self.screen.fill((245, 240, 230))  # 薄い和紙色
-        
-        # 用語集タイトル
-        glossary_title = self.large_font.render("【囲碁用語集】", True, (80, 40, 0))
-        self.screen.blit(glossary_title, (self.width // 2 - glossary_title.get_width() // 2, self.height * 0.1))
-        
-        # 用語の定義
-        terms = [
-            ("確定陣地", "完全に自分の石で囲まれた領域。相手が侵入できない安全な空点。"),
-            ("影響圏", "将来的に自分の陣地になりそうな領域。石から1〜2マス以内の空点。"),
-            ("争点", "黒と白の両方の影響圏が重なっている場所。重要な戦略ポイント。"),
-            ("アタリ", "石または石のグループが取られる一歩手前の状態。呼吸点が1つだけの状態。"),
-            ("コウ", "同じ局面が繰り返されるのを防ぐルール。直前に取られた石と同じ場所に石を置けない。"),
-            ("呼吸点", "石または石のグループに隣接する空点。呼吸点がなくなると石は取られる。"),
-            ("自殺手", "置いた瞬間に自分の石が呼吸点を失って取られてしまう手。禁じ手。"),
-            ("眼", "石のグループ内の空点。2つ以上の眼があると、そのグループは生きる。"),
-            ("シチョウ", "石を連続してアタリにしていく手筋。逃げる側が盤端に追い詰められると取られる。"),
-            ("コミ", "先手（黒）の有利を相殺するために後手（白）に与えられる得点。本ゲームでは3.5目。")
-        ]
-        
-        # 表の枠を描画
-        table_x = self.width * 0.1
-        table_y = self.height * 0.2
-        table_width = self.width * 0.8
-        table_height = self.height * 0.55  # 高さを少し小さくして戻るボタン用のスペースを確保
-        
-        # 各用語の高さを計算
-        term_heights = []
-        total_content_height = 0
-        
-        for term, definition in terms:
-            # 説明テキストの行数を計算
-            words = definition.split()
-            line = ""
-            line_count = 1
-            
-            for word in words:
-                test_line = line + word + " "
-                test_text = self.small_font.render(test_line, True, (80, 40, 0))
-                if test_text.get_width() > table_width * 0.6:  # 幅を少し狭くして余裕を持たせる
-                    line = word + " "
-                    line_count += 1
-                else:
-                    line = test_line
-            
-            # 各用語の必要な高さを計算（最低でも1行分）
-            line_height = self.small_font.get_height() + 2
-            term_height = max(40, line_count * line_height + 10)  # 最低40ピクセル、または行数に応じた高さ
-            term_heights.append(term_height)
-            total_content_height += term_height
-        
-        # ヘッダーの高さ
-        header_height = 40
-        total_content_height += header_height
-        
-        # 表の高さが足りない場合は調整
-        if total_content_height > table_height:
-            table_height = min(total_content_height, self.height * 0.65)  # 画面の65%を超えないように
-        
-        # 表の背景
-        pygame.draw.rect(self.screen, (235, 225, 200), (table_x, table_y, table_width, table_height))
-        pygame.draw.rect(self.screen, (100, 60, 20), (table_x, table_y, table_width, table_height), 2)
-        
-        # ヘッダー行
-        header_bg_rect = pygame.Rect(table_x, table_y, table_width, header_height)
-        pygame.draw.rect(self.screen, (200, 180, 140), header_bg_rect)
-        pygame.draw.line(self.screen, (100, 60, 20), (table_x, table_y + header_height), 
-                        (table_x + table_width, table_y + header_height), 2)
-        
-        # ヘッダーテキスト
-        term_header = self.medium_font.render("用語", True, (80, 40, 0))
-        self.screen.blit(term_header, (table_x + table_width * 0.1, table_y + header_height/2 - term_header.get_height()/2))
-        
-        # 縦線
-        pygame.draw.line(self.screen, (100, 60, 20), (table_x + table_width * 0.25, table_y), 
-                        (table_x + table_width * 0.25, table_y + table_height), 2)
-        
-        desc_header = self.medium_font.render("説明", True, (80, 40, 0))
-        self.screen.blit(desc_header, (table_x + table_width * 0.3, table_y + header_height/2 - desc_header.get_height()/2))
-        
-        # 各用語の行
-        current_y = table_y + header_height
-        
-        for i, ((term, definition), term_height) in enumerate(zip(terms, term_heights)):
-            # 行の背景（交互に色を変える）
-            if i % 2 == 0:
-                pygame.draw.rect(self.screen, (245, 240, 230), (table_x + 1, current_y, table_width - 2, term_height))
-            
-            # 用語
-            term_text = self.medium_font.render(term, True, (80, 40, 0))
-            self.screen.blit(term_text, (table_x + table_width * 0.05, current_y + term_height/2 - term_text.get_height()/2))
-            
-            # 説明（複数行に分割して表示）
-            words = definition.split()
-            line = ""
-            line_height = self.small_font.get_height() + 2
-            line_y = current_y + 5  # 上部に少し余白を設ける
-            
-            for word in words:
-                test_line = line + word + " "
-                test_text = self.small_font.render(test_line, True, (80, 40, 0))
-                if test_text.get_width() > table_width * 0.6:  # 幅を少し狭くして余裕を持たせる
-                    # 行が長すぎる場合は改行
-                    text = self.small_font.render(line, True, (80, 40, 0))
-                    self.screen.blit(text, (table_x + table_width * 0.3, line_y))
-                    line = word + " "
-                    line_y += line_height
-                else:
-                    line = test_line
-            
-            # 最後の行を表示
-            if line:
-                text = self.small_font.render(line, True, (80, 40, 0))
-                self.screen.blit(text, (table_x + table_width * 0.3, line_y))
-            
-            # 行の区切り線
-            current_y += term_height
-            pygame.draw.line(self.screen, (100, 60, 20), (table_x, current_y), 
-                            (table_x + table_width, current_y), 1)
-        
-        # 戻るボタン - 用語集の下部に配置（十分な余白を確保）
-        back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 30, 200, 50)
-        pygame.draw.rect(self.screen, (220, 210, 180), back_button)
-        pygame.draw.rect(self.screen, (100, 60, 20), back_button, 2)
-        back_text = self.large_font.render("戻る", True, (80, 40, 0))
-        self.screen.blit(back_text, (back_button.centerx - back_text.get_width() // 2, 
-                                    back_button.centery - back_text.get_height() // 2))
+    # 用語集関連のメソッドを削除
     def draw_game_screen(self, player_turn, ai_thinking):
         """
         ゲーム画面の描画
@@ -703,17 +559,7 @@ class UI:
                 self.screen.blit(popup_surface, (self.width // 2 - 150, self.height // 2 - 25))
             else:
                 self.popup_message = None
-    def is_glossary_button_clicked(self, pos):
-        """
-        用語集ボタンがクリックされたかどうかを判定
-        
-        Args:
-            pos: クリック位置の座標
-            
-        Returns:
-            bool: ボタンがクリックされたかどうか
-        """
-        return self.glossary_button.collidepoint(pos)
+    # 用語集関連のメソッドを削除
     def draw_advantage_bar(self):
         """優位性を示す横棒グラフを描画"""
         # グラフの位置とサイズ
@@ -779,25 +625,7 @@ class UI:
         
         ai_text = self.small_font.render("AI", True, self.BLACK)
         self.screen.blit(ai_text, (bar_x + bar_width - ai_text.get_width(), bar_y + bar_height + 5))
-    def handle_glossary_back_button(self, pos):
-        """
-        用語集の戻るボタンがクリックされたかどうかを判定
-        
-        Args:
-            pos: クリック位置の座標
-            
-        Returns:
-            bool: ボタンがクリックされたかどうか
-        """
-        # 用語集の表の位置を計算
-        table_x = self.width * 0.1
-        table_y = self.height * 0.2
-        table_width = self.width * 0.8
-        table_height = self.height * 0.55
-        
-        # 戻るボタンの位置
-        back_button = pygame.Rect(self.width // 2 - 100, table_y + table_height + 30, 200, 50)
-        return back_button.collidepoint(pos)
+    # 用語集関連のメソッドを削除
     def is_black_button_clicked(self, pos):
         """
         黒（先手）ボタンがクリックされたかどうかを判定

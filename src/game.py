@@ -85,12 +85,6 @@ class Game:
                 # AIの手番から開始
                 self.ai_thinking = True
                 self.ai_think_start_time = pygame.time.get_ticks()
-            # 用語集ボタンがクリックされたかチェック
-            elif self.ui.is_glossary_button_clicked(event.pos):
-                self.ui.show_glossary = True
-            # 戻るボタンがクリックされたかチェック（用語集から戻る）
-            elif self.ui.show_glossary and self.ui.handle_glossary_back_button(event.pos):
-                self.ui.show_glossary = False
     
     def handle_game_event(self, event):
         """ゲーム画面のイベント処理"""
@@ -173,6 +167,9 @@ class Game:
                 if board_pos:
                     self.board.update_preview(*board_pos)
             
+            # ステータスバーの更新（常に更新）
+            self.board.update_territories()
+            
             # デバッグ情報（コンソールに連続パス数を表示）
             if self.consecutive_passes > 0:
                 print(f"連続パス数: {self.consecutive_passes}")
@@ -204,10 +201,13 @@ class Game:
             black_score = self.board.calculate_score(Board.BLACK)
             white_score = self.board.calculate_score(Board.WHITE) + 3.5  # コミ
             
+            # 正確に比較して勝者を決定
             if black_score > white_score:
                 self.board.winner = Board.BLACK
+                print(f"黒の勝利: 黒={black_score} > 白={white_score}")
             else:
                 self.board.winner = Board.WHITE
+                print(f"白の勝利: 黒={black_score} <= 白={white_score}")
             return True  # ゲーム終了を明示的に返す
         return False  # ゲーム継続
     
