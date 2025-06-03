@@ -188,10 +188,12 @@ class Game:
             self.consecutive_passes += 1
             print(f"AIがパスしました。連続パス数: {self.consecutive_passes}")
         
-        self.player_turn = True
-        if self.check_game_end():  # ゲーム終了条件を確認
+        # ゲーム終了条件を確認
+        if self.check_game_end():
             print("ゲーム終了条件を満たしました")
             return  # ゲームが終了した場合は処理を終了
+            
+        self.player_turn = True
     
     def check_game_end(self):
         """ゲーム終了条件のチェック"""
