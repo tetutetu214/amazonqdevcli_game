@@ -158,6 +158,10 @@ class Game:
             # デバッグ情報（コンソールに連続パス数を表示）
             if self.consecutive_passes > 0:
                 print(f"連続パス数: {self.consecutive_passes}")
+                
+            # 連続パスのチェック（念のため毎フレーム確認）
+            if self.consecutive_passes >= 2:
+                self.check_game_end()
     
     def ai_move(self):
         """AIの手を処理"""
@@ -203,6 +207,11 @@ class Game:
             else:
                 self.board.winner = Board.WHITE
                 print(f"白の勝利: 黒={black_score} <= 白={white_score}")
+            
+            # 明示的にプレイヤーターンをFalseにして、AIの思考を停止
+            self.player_turn = False
+            self.ai_thinking = False
+            
             return True  # ゲーム終了を明示的に返す
         return False  # ゲーム継続
     

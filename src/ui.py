@@ -573,17 +573,17 @@ class UI:
         """ポップアップメッセージの描画"""
         if self.popup_message:
             current_time = pygame.time.get_ticks()
-            if current_time - self.popup_timer < 2000:  # 2秒間表示
+            if current_time - self.popup_timer < 3000:  # 3秒間表示（連続パス終了メッセージを見やすくするため延長）
                 # 半透明の背景
-                popup_surface = pygame.Surface((300, 50), pygame.SRCALPHA)
+                popup_surface = pygame.Surface((400, 80), pygame.SRCALPHA)
                 popup_surface.fill((0, 0, 0, 180))
                 
                 # メッセージテキスト
                 message_text = self.medium_font.render(self.popup_message, True, self.WHITE)
-                popup_surface.blit(message_text, (150 - message_text.get_width() // 2, 25 - message_text.get_height() // 2))
+                popup_surface.blit(message_text, (200 - message_text.get_width() // 2, 40 - message_text.get_height() // 2))
                 
                 # 画面中央に表示
-                self.screen.blit(popup_surface, (self.width // 2 - 150, self.height // 2 - 25))
+                self.screen.blit(popup_surface, (self.width // 2 - 200, self.height // 2 - 40))
             else:
                 self.popup_message = None
     # 用語集関連のメソッドを削除

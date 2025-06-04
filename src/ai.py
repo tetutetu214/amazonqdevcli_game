@@ -37,6 +37,11 @@ class AI:
             print("AIは有効な手がないためパスします")
             return None  # パス
         
+        # デバッグ用: 一定確率でパスする（テスト用）
+        if random.random() < 0.1:  # 10%の確率でパス
+            print("AIはランダムにパスします（テスト用）")
+            return None
+        
         # 各手の評価値を計算
         move_scores = {}
         for move in valid_moves:
@@ -50,12 +55,6 @@ class AI:
         # 最善手を選択
         best_move = random.choice(best_moves)
         print(f"AIは ({best_move[0]}, {best_move[1]}) に石を置きます")
-        
-        # 稀にパスする（デバッグ用）
-        # if random.random() < 0.05:  # 5%の確率でパス
-        #     print("AIはランダムにパスします")
-        #     return None
-            
         return best_move
     
     def evaluate_move(self, move):
