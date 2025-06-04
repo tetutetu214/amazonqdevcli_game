@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
 import pygame
 import os
 import random
 import math
+import sys
+import numpy as np
 from .board import Board
 
 class UI:
@@ -50,7 +51,11 @@ class UI:
             font_paths = [
                 '/mnt/c/Windows/Fonts/HGRSKP.TTC',  # HG行書体
                 '/mnt/c/Windows/Fonts/HGRGM.TTC',   # HG正楷書体
-                '/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf'  # Noto Sans JP
+                '/mnt/c/Windows/Fonts/NotoSansJP-VF.ttf',  # Noto Sans JP
+                '/usr/share/fonts/opentype/ipaexfont-gothic/ipaexg.ttf',  # IPAex Gothic
+                '/usr/share/fonts/opentype/ipaexfont-mincho/ipaexm.ttf',  # IPAex Mincho
+                '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf',  # システムの日本語ゴシック
+                '/usr/share/fonts/truetype/fonts-japanese-mincho.ttf'   # システムの日本語明朝
             ]
             
             for font_path in font_paths:
@@ -59,6 +64,7 @@ class UI:
                     self.large_font = pygame.font.Font(font_path, 36)
                     self.medium_font = pygame.font.Font(font_path, 24)
                     self.small_font = pygame.font.Font(font_path, 18)
+                    print(f"日本語フォントを読み込みました: {font_path}")
                     break
             else:
                 # フォントが見つからない場合はシステムフォントを使用
@@ -66,8 +72,10 @@ class UI:
                 self.large_font = pygame.font.SysFont(None, 36)
                 self.medium_font = pygame.font.SysFont(None, 24)
                 self.small_font = pygame.font.SysFont(None, 18)
-        except:
+                print("日本語フォントが見つかりませんでした。システムフォントを使用します。")
+        except Exception as e:
             # フォントが見つからない場合はシステムフォントを使用
+            print(f"フォント読み込みエラー: {e}")
             self.title_font = pygame.font.SysFont(None, 60)
             self.large_font = pygame.font.SysFont(None, 36)
             self.medium_font = pygame.font.SysFont(None, 24)
@@ -80,9 +88,8 @@ class UI:
         self.play_again_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
         self.back_to_title_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)
         
-        # 先手後手選択ボタン
-        self.black_button = pygame.Rect(self.width // 2 - 150, self.height * 0.4, 120, 50)
-        self.white_button = pygame.Rect(self.width // 2 + 30, self.height * 0.4, 120, 50)
+        # ゲーム開始ボタン（黒石のみ）
+        self.black_button = pygame.Rect(self.width // 2 - 100, self.height * 0.4, 200, 50)
         
         # 画像の読み込み
         self.load_images()
@@ -152,26 +159,15 @@ class UI:
         self.screen.blit(self.background_img, (0, 0))
         
         # タイトル
-        title_text = self.title_font.render("GOGO囲碁", True, self.BLACK)
+        title_text = self.title_font.render("GOGO 囲碁", True, self.BLACK)
         self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.2))
         
-        # 先手後手選択テキスト
-        select_text = self.medium_font.render("先手・後手を選択してください", True, (80, 40, 0))
-        self.screen.blit(select_text, (self.width // 2 - select_text.get_width() // 2, self.height * 0.35))
-        
-        # 黒（先手）ボタン
+        # ゲーム開始ボタン
         pygame.draw.rect(self.screen, (50, 50, 50), self.black_button)
         pygame.draw.rect(self.screen, self.BLACK, self.black_button, 2)
-        black_text = self.medium_font.render("黒（先手）", True, self.WHITE)
+        black_text = self.medium_font.render("ゲーム開始", True, self.WHITE)
         self.screen.blit(black_text, (self.black_button.centerx - black_text.get_width() // 2, 
                                     self.black_button.centery - black_text.get_height() // 2))
-        
-        # 白（後手）ボタン
-        pygame.draw.rect(self.screen, (240, 240, 240), self.white_button)
-        pygame.draw.rect(self.screen, self.BLACK, self.white_button, 2)
-        white_text = self.medium_font.render("白（後手）", True, self.BLACK)
-        self.screen.blit(white_text, (self.white_button.centerx - white_text.get_width() // 2, 
-                                    self.white_button.centery - white_text.get_height() // 2))
     
     # 用語集関連のメソッドを削除
     def draw_game_screen(self, player_turn, ai_thinking):
@@ -267,9 +263,10 @@ class UI:
         if board_pos:
             x, y = board_pos
             if self.board.is_valid_move(x, y):
-                # 半透明の黒石を表示
+                # プレイヤーは常に黒石
+                preview_color = (0, 0, 0, 128)  # 黒の半透明
                 s = pygame.Surface((int(self.cell_size * 0.9), int(self.cell_size * 0.9)), pygame.SRCALPHA)
-                pygame.draw.circle(s, (0, 0, 0, 128), (int(s.get_width() / 2), int(s.get_height() / 2)), int(self.cell_size * 0.45))
+                pygame.draw.circle(s, preview_color, (int(s.get_width() / 2), int(s.get_height() / 2)), int(self.cell_size * 0.45))
                 self.screen.blit(s, (int(self.board_x + self.board_margin + x * self.cell_size - self.cell_size * 0.45),
                                     int(self.board_y + self.board_margin + y * self.cell_size - self.cell_size * 0.45)))
     
@@ -318,12 +315,17 @@ class UI:
     
     def draw_player_info(self):
         """プレイヤー情報の描画（左側）"""
+        # プレイヤーは常に黒石
+        player_color = "黒"
+        player_stone = Board.BLACK
+        
         # プレイヤー名
-        player_text = self.medium_font.render("プレイヤー（黒）", True, self.BLACK)
+        player_text = self.medium_font.render(f"プレイヤー（{player_color}）", True, self.BLACK)
         self.screen.blit(player_text, (self.width * 0.1, self.height * 0.2))
         
         # 取った石の数
-        captures_text = self.small_font.render(f"取った石: {self.board.black_captures}", True, self.BLACK)
+        captures = self.board.black_captures
+        captures_text = self.small_font.render(f"取った石: {captures}", True, self.BLACK)
         self.screen.blit(captures_text, (self.width * 0.1, self.height * 0.25))
         
         # 陣地ポイント
@@ -332,7 +334,7 @@ class UI:
         self.screen.blit(territory_text, (self.width * 0.1, self.height * 0.3))
         
         # 合計得点
-        total_score = self.board.calculate_score(Board.BLACK)
+        total_score = self.board.calculate_score(player_stone)
         score_text = self.medium_font.render(f"合計: {total_score}", True, self.BLACK)
         self.screen.blit(score_text, (self.width * 0.1, self.height * 0.35))
         
@@ -355,12 +357,17 @@ class UI:
         Args:
             ai_thinking: AIが思考中かどうか
         """
+        # AIは常に白石
+        ai_color = "白"
+        ai_stone = Board.WHITE
+        
         # AI名
-        ai_text = self.medium_font.render("AI（白）", True, self.BLACK)
+        ai_text = self.medium_font.render(f"AI（{ai_color}）", True, self.BLACK)
         self.screen.blit(ai_text, (self.width * 0.8, self.height * 0.2))
         
         # 取った石の数
-        captures_text = self.small_font.render(f"取った石: {self.board.white_captures}", True, self.BLACK)
+        captures = self.board.white_captures
+        captures_text = self.small_font.render(f"取った石: {captures}", True, self.BLACK)
         self.screen.blit(captures_text, (self.width * 0.8, self.height * 0.25))
         
         # 陣地ポイント
@@ -368,12 +375,12 @@ class UI:
         territory_text = self.small_font.render(f"陣地: {territory_count}", True, self.BLACK)
         self.screen.blit(territory_text, (self.width * 0.8, self.height * 0.3))
         
-        # コミ
+        # コミ (白の場合のみ表示)
         komi_text = self.small_font.render("コミ: 3.5", True, self.BLACK)
         self.screen.blit(komi_text, (self.width * 0.8, self.height * 0.35))
         
         # 合計得点
-        total_score = self.board.calculate_score(Board.WHITE) + 3.5  # コミを加算
+        total_score = self.board.calculate_score(ai_stone) + 3.5  # 白の場合はコミを加算
         score_text = self.medium_font.render(f"合計: {total_score}", True, self.BLACK)
         self.screen.blit(score_text, (self.width * 0.8, self.height * 0.4))
         
@@ -406,24 +413,34 @@ class UI:
         # 背景
         self.screen.blit(self.background_img, (0, 0))
         
+        # プレイヤーは常に黒石、AIは常に白石
+        player_stone = Board.BLACK
+        ai_stone = Board.WHITE
+        
         # 結果タイトル
         result_text = self.large_font.render("対局結果", True, self.BLACK)
         self.screen.blit(result_text, (self.width // 2 - result_text.get_width() // 2, self.height * 0.2))
         
         # プレイヤーの得点
-        black_score = self.board.calculate_score(Board.BLACK)
-        black_text = self.medium_font.render(f"プレイヤー（黒）: {self.board.black_captures} + {sum(sum(self.board.black_territory))} = {black_score}", True, self.BLACK)
-        self.screen.blit(black_text, (self.width // 2 - black_text.get_width() // 2, self.height * 0.3))
+        player_score = self.board.calculate_score(player_stone)
+        player_captures = self.board.black_captures
+        player_territory = sum(sum(self.board.black_territory))
+        
+        player_text = self.medium_font.render(f"プレイヤー（黒）: {player_captures} + {player_territory} = {player_score}", True, self.BLACK)
+        self.screen.blit(player_text, (self.width // 2 - player_text.get_width() // 2, self.height * 0.3))
         
         # AIの得点
-        white_score = self.board.calculate_score(Board.WHITE) + 3.5  # コミを加算
-        white_text = self.medium_font.render(f"AI（白）: {self.board.white_captures} + {sum(sum(self.board.white_territory))} + 3.5 = {white_score}", True, self.BLACK)
-        self.screen.blit(white_text, (self.width // 2 - white_text.get_width() // 2, self.height * 0.35))
+        ai_score = self.board.calculate_score(ai_stone) + 3.5  # 白の場合はコミを加算
+        ai_captures = self.board.white_captures
+        ai_territory = sum(sum(self.board.white_territory))
+        
+        ai_text = self.medium_font.render(f"AI（白）: {ai_captures} + {ai_territory} + 3.5 = {ai_score}", True, self.BLACK)
+        self.screen.blit(ai_text, (self.width // 2 - ai_text.get_width() // 2, self.height * 0.35))
         
         # 勝敗結果
-        if self.board.winner == Board.BLACK:
+        if self.board.winner == player_stone:
             result = "プレイヤーの勝利！"
-        elif self.board.winner == Board.WHITE:
+        elif self.board.winner == ai_stone:
             result = "AIの勝利！"
         else:
             result = "引き分け"
@@ -531,6 +548,16 @@ class UI:
         """
         return self.back_to_title_button.collidepoint(pos)
     
+    def show_popup_message(self, message):
+        """
+        ポップアップメッセージを表示
+        
+        Args:
+            message: 表示するメッセージ
+        """
+        self.popup_message = message
+        self.popup_timer = pygame.time.get_ticks()
+    
     def show_invalid_move_guide(self, x, y):
         """
         禁手ガイドを表示
@@ -562,25 +589,95 @@ class UI:
     # 用語集関連のメソッドを削除
     def draw_advantage_bar(self):
         """優位性を示す横棒グラフを描画"""
+        # プレイヤーは常に黒石、AIは常に白石
+        player_stone = Board.BLACK
+        ai_stone = Board.WHITE
+        
         # グラフの位置とサイズ
         bar_width = self.width * 0.4
         bar_height = 30
         bar_x = (self.width - bar_width) / 2
         bar_y = 30  # 画面上部に配置
         
-        # 黒と白の得点を計算（コミを含む）
-        black_score = self.board.calculate_score(Board.BLACK)
-        white_score = self.board.calculate_score(Board.WHITE) + 3.5  # コミを加算
+        # プレイヤーとAIの得点を計算（コミを含む）
+        player_score = self.board.calculate_score(player_stone)
+        ai_score = self.board.calculate_score(ai_stone)
         
-        # 総得点
-        total_score = black_score + white_score
-        if total_score == 0:  # 0除算を防ぐ
-            black_ratio = 0.5
+        # 石の数と陣地の数を考慮した勝率計算
+        player_stones = np.sum(self.board.board == player_stone)
+        ai_stones = np.sum(self.board.board == ai_stone)
+        
+        # 陣地の数
+        player_territory = np.sum(self.board.black_territory)
+        ai_territory = np.sum(self.board.white_territory)
+        
+        # 取った石の数
+        player_captures = self.board.black_captures
+        ai_captures = self.board.white_captures
+        
+        # コミを考慮
+        ai_score += 3.5  # AIが白の場合はコミを加算
+        
+        # 盤面の進行度に応じて重みを変える（序盤は石の数、中盤は取った石の数、終盤は陣地を重視）
+        total_stones = player_stones + ai_stones
+        board_progress = min(1.0, total_stones / (self.board.size * self.board.size * 0.7))  # 70%埋まったら終盤とみなす
+        
+        # 序盤は石の数と位置、中盤は取った石、終盤は陣地で勝率を計算
+        if board_progress < 0.3:  # 序盤
+            # 石の配置の良さを評価（中央に近いほど良い）
+            player_position_score = 0
+            ai_position_score = 0
+            center = self.board.size // 2
+            
+            for y in range(self.board.size):
+                for x in range(self.board.size):
+                    if self.board.board[y, x] == player_stone:
+                        # 中央からの距離が小さいほど高得点
+                        distance = abs(x - center) + abs(y - center)
+                        player_position_score += (self.board.size - distance) / 2
+                    elif self.board.board[y, x] == ai_stone:
+                        distance = abs(x - center) + abs(y - center)
+                        ai_position_score += (self.board.size - distance) / 2
+            
+            # 序盤の評価（石の数と位置）
+            player_eval = player_stones * 2 + player_position_score
+            ai_eval = ai_stones * 2 + ai_position_score
+            
+        elif board_progress < 0.7:  # 中盤
+            # 中盤の評価（石の数と取った石の数）
+            player_eval = player_stones + player_captures * 2 + player_territory * 0.5
+            ai_eval = ai_stones + ai_captures * 2 + ai_territory * 0.5
+            
+        else:  # 終盤
+            # 終盤の評価（陣地と最終スコア）
+            player_eval = player_score
+            ai_eval = ai_score
+        
+        # 勝率の計算（シグモイド関数で0.1～0.9の範囲に収める）
+        advantage = (player_eval - ai_eval) / max(10, (player_eval + ai_eval) * 0.5)
+        player_win_rate = 1.0 / (1.0 + np.exp(-advantage * 3))  # シグモイド関数
+        player_win_rate = max(0.1, min(0.9, player_win_rate))  # 0.1～0.9の範囲に制限
+        
+        # 手番によるわずかな補正（手番があるほうが有利）
+        from .game import Game
+        game_instance = None
+        for frame in sys._current_frames().values():
+            for local_var in frame.f_locals.values():
+                if isinstance(local_var, Game):
+                    game_instance = local_var
+                    break
+            if game_instance:
+                break
+                
+        if game_instance and game_instance.player_turn:
+            player_win_rate += 0.03
         else:
-            black_ratio = black_score / total_score
+            player_win_rate -= 0.03
         
-        # 黒の部分の幅を計算
-        black_width = bar_width * black_ratio
+        player_win_rate = max(0.1, min(0.9, player_win_rate))  # 再度範囲を制限
+        
+        # プレイヤーの部分の幅を計算
+        player_width = bar_width * player_win_rate
         
         # 背景（枠）を描画 - 半透明の背景を追加
         bg_surface = pygame.Surface((bar_width + 4, bar_height + 4), pygame.SRCALPHA)
@@ -590,11 +687,13 @@ class UI:
         pygame.draw.rect(self.screen, (200, 200, 200), (bar_x, bar_y, bar_width, bar_height))
         pygame.draw.rect(self.screen, self.BLACK, (bar_x, bar_y, bar_width, bar_height), 2)
         
-        # 黒側（左側）
-        pygame.draw.rect(self.screen, (0, 0, 0, 200), (bar_x, bar_y, black_width, bar_height))
+        # プレイヤー側（左側）
+        player_color = (0, 0, 0, 200)  # 黒（半透明）
+        pygame.draw.rect(self.screen, player_color, (bar_x, bar_y, player_width, bar_height))
         
-        # 白側（右側）
-        pygame.draw.rect(self.screen, (255, 255, 255, 200), (bar_x + black_width, bar_y, bar_width - black_width, bar_height))
+        # AI側（右側）
+        ai_color = (255, 255, 255, 200)  # 白（半透明）
+        pygame.draw.rect(self.screen, ai_color, (bar_x + player_width, bar_y, bar_width - player_width, bar_height))
         
         # 中央線
         pygame.draw.line(self.screen, (100, 100, 100), 
@@ -602,21 +701,23 @@ class UI:
                          (bar_x + bar_width / 2, bar_y + bar_height), 2)
         
         # パーセンテージ表示
-        black_percent = int(black_ratio * 100)
-        white_percent = 100 - black_percent
+        player_percent = int(player_win_rate * 100)
+        ai_percent = 100 - player_percent
         
-        # 黒のパーセンテージ
-        black_text = self.small_font.render(f"{black_percent}%", True, self.WHITE)
-        if black_width > black_text.get_width() + 10:  # 十分なスペースがある場合
-            self.screen.blit(black_text, (bar_x + 10, bar_y + bar_height/2 - black_text.get_height()/2))
+        # プレイヤーのパーセンテージ
+        player_text_color = self.WHITE  # 黒背景に白文字
+        player_text = self.small_font.render(f"{player_percent}%", True, player_text_color)
+        if player_width > player_text.get_width() + 10:  # 十分なスペースがある場合
+            self.screen.blit(player_text, (bar_x + 10, bar_y + bar_height/2 - player_text.get_height()/2))
         
-        # 白のパーセンテージ
-        white_text = self.small_font.render(f"{white_percent}%", True, self.BLACK)
-        if bar_width - black_width > white_text.get_width() + 10:  # 十分なスペースがある場合
-            self.screen.blit(white_text, (bar_x + black_width + 10, bar_y + bar_height/2 - white_text.get_height()/2))
+        # AIのパーセンテージ
+        ai_text_color = self.BLACK  # 白背景に黒文字
+        ai_text = self.small_font.render(f"{ai_percent}%", True, ai_text_color)
+        if bar_width - player_width > ai_text.get_width() + 10:  # 十分なスペースがある場合
+            self.screen.blit(ai_text, (bar_x + player_width + 10, bar_y + bar_height/2 - ai_text.get_height()/2))
         
         # 優位性の説明テキスト
-        advantage_text = self.small_font.render("優位性", True, self.BLACK)
+        advantage_text = self.small_font.render("勝率", True, self.BLACK)
         self.screen.blit(advantage_text, (bar_x, bar_y - 25))
         
         # プレイヤーとAIのラベル

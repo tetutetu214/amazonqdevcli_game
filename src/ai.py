@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
 import random
 import numpy as np
+import sys
 from .board import Board
 
 class AI:
@@ -32,7 +32,9 @@ class AI:
                 if self.board.is_valid_move(x, y):
                     valid_moves.append((x, y))
         
+        # 有効な手がない場合はパス
         if not valid_moves:
+            print("AIは有効な手がないためパスします")
             return None  # パス
         
         # 各手の評価値を計算
@@ -45,7 +47,16 @@ class AI:
         best_score = max(move_scores.values())
         best_moves = [move for move, score in move_scores.items() if score == best_score]
         
-        return random.choice(best_moves)
+        # 最善手を選択
+        best_move = random.choice(best_moves)
+        print(f"AIは ({best_move[0]}, {best_move[1]}) に石を置きます")
+        
+        # 稀にパスする（デバッグ用）
+        # if random.random() < 0.05:  # 5%の確率でパス
+        #     print("AIはランダムにパスします")
+        #     return None
+            
+        return best_move
     
     def evaluate_move(self, move):
         """
@@ -60,16 +71,20 @@ class AI:
         x, y = move
         score = 0
         
+        # AIは常に白石
+        ai_stone = Board.WHITE
+        opponent_stone = Board.BLACK
+        
         # 一時的に石を置いてみる
         temp_board = self.board.board.copy()
-        temp_board[y, x] = Board.WHITE
+        temp_board[y, x] = ai_stone
         
         # 1. アタリの処理（相手の石を取れる場合は高評価）
-        captured = self.count_potential_captures(x, y)
+        captured = self.count_potential_captures(x, y, ai_stone, opponent_stone)
         score += captured * 10
         
         # 2. 自分の石がアタリにならないようにする
-        if self.is_self_atari(x, y):
+        if self.is_self_atari(x, y, ai_stone):
             score -= 5
         
         # 3. 陣地の拡大（影響圏の増加）
@@ -89,26 +104,34 @@ class AI:
         
         return score
     
-    def count_potential_captures(self, x, y):
+    def count_potential_captures(self, x, y, ai_stone=None, opponent_stone=None):
         """
         指定した位置に石を置いた場合に取れる相手の石の数を計算
         
         Args:
             x, y: 石を置く位置の座標
+            ai_stone: AIの石の色 (デフォルト: Board.WHITE)
+            opponent_stone: 相手の石の色 (デフォルト: Board.BLACK)
             
         Returns:
             int: 取れる石の数
         """
+        # デフォルト値の設定
+        if ai_stone is None:
+            ai_stone = Board.WHITE
+        if opponent_stone is None:
+            opponent_stone = Board.BLACK
+            
         # 一時的に石を置いてみる
         temp_board = self.board.board.copy()
-        temp_board[y, x] = Board.WHITE
+        temp_board[y, x] = ai_stone
         
         captured_count = 0
         
         # 隣接する4方向をチェック
         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < self.board.size and 0 <= ny < self.board.size and self.board.board[ny, nx] == Board.BLACK:
+            if 0 <= nx < self.board.size and 0 <= ny < self.board.size and self.board.board[ny, nx] == opponent_stone:
                 group = self.board.find_group(nx, ny)
                 
                 # この手を打った後にこのグループが呼吸点を持つかチェック
@@ -128,25 +151,30 @@ class AI:
         
         return captured_count
     
-    def is_self_atari(self, x, y):
+    def is_self_atari(self, x, y, ai_stone=None):
         """
         指定した位置に石を置くと自分の石がアタリになるかどうかを判定
         
         Args:
             x, y: 石を置く位置の座標
+            ai_stone: AIの石の色 (デフォルト: Board.WHITE)
             
         Returns:
             bool: 自分の石がアタリになるかどうか
         """
+        # デフォルト値の設定
+        if ai_stone is None:
+            ai_stone = Board.WHITE
+            
         # 一時的に石を置いてみる
         temp_board = self.board.board.copy()
-        temp_board[y, x] = Board.WHITE
+        temp_board[y, x] = ai_stone
         
         # 隣接する自分の石のグループを見つける
         adjacent_groups = []
         for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < self.board.size and 0 <= ny < self.board.size and self.board.board[ny, nx] == Board.WHITE:
+            if 0 <= nx < self.board.size and 0 <= ny < self.board.size and self.board.board[ny, nx] == ai_stone:
                 group = self.board.find_group(nx, ny)
                 if group not in adjacent_groups:
                     adjacent_groups.append(group)
@@ -178,59 +206,63 @@ class AI:
         Returns:
             int: 影響圏の増加量
         """
+        # AIは常に白石
+        ai_stone = Board.WHITE
+        
         # 現在の影響圏の面積
         current_influence = np.sum(self.board.white_influence)
         
         # 一時的に石を置いてみる
-        temp_board = self.board.board.copy()
-        temp_board[y, x] = Board.WHITE
+        self.board.update_preview(x, y)
         
-        # 新しい影響圏を計算
-        new_influence = 0
-        for ny in range(self.board.size):
-            for nx in range(self.board.size):
-                if temp_board[ny, nx] == Board.EMPTY:
-                    # 白石からの距離を計算
-                    min_dist_white = float('inf')
-                    for cy in range(self.board.size):
-                        for cx in range(self.board.size):
-                            if temp_board[cy, cx] == Board.WHITE:
-                                dist = abs(nx - cx) + abs(ny - cy)  # マンハッタン距離
-                                min_dist_white = min(min_dist_white, dist)
-                    
-                    # 黒石からの距離を計算
-                    min_dist_black = float('inf')
-                    for cy in range(self.board.size):
-                        for cx in range(self.board.size):
-                            if temp_board[cy, cx] == Board.BLACK:
-                                dist = abs(nx - cx) + abs(ny - cy)  # マンハッタン距離
-                                min_dist_black = min(min_dist_black, dist)
-                    
-                    # 影響圏の判定（距離が2以下で、かつ相手より近い）
-                    if min_dist_white <= 2 and (min_dist_white < min_dist_black or min_dist_black > 2):
-                        new_influence += 1
+        # 石を置いた後の影響圏の面積
+        if self.board.preview_board is not None:
+            new_influence = np.sum(self.board.preview_white_influence)
+            
+            # プレビューをクリア
+            self.board.preview_board = None
+            self.board.preview_black_territory = None
+            self.board.preview_white_territory = None
+            self.board.preview_black_influence = None
+            self.board.preview_white_influence = None
+            
+            return new_influence - current_influence
         
-        return new_influence - current_influence
+        return 0
     
     def calculate_invasion_value(self, x, y):
         """
-        指定した位置に石を置いた場合の相手の陣地侵略価値を計算
+        指定した位置に石を置いた場合の相手の陣地侵略の価値を計算
         
         Args:
             x, y: 石を置く位置の座標
             
         Returns:
-            int: 侵略価値
+            int: 侵略の価値
         """
-        # 相手の影響圏内かどうかをチェック
-        if self.board.black_influence[y, x]:
+        # AIは常に白石、相手は常に黒石
+        ai_stone = Board.WHITE
+        opponent_stone = Board.BLACK
+        
+        # 相手の影響圏かどうかをチェック
+        opponent_influence = self.board.black_influence
+        
+        if opponent_influence[y, x]:
+            # 相手の影響圏内なら高評価
             return 5
         
-        # 相手の確定陣地の近くかどうかをチェック
-        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]:
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < self.board.size and 0 <= ny < self.board.size and self.board.black_territory[ny, nx]:
-                return 3
+        # 相手の石に近いほど高評価
+        min_dist = float('inf')
+        for cy in range(self.board.size):
+            for cx in range(self.board.size):
+                if self.board.board[cy, cx] == opponent_stone:
+                    dist = abs(x - cx) + abs(y - cy)  # マンハッタン距離
+                    min_dist = min(min_dist, dist)
+        
+        if min_dist <= 2:
+            return 3
+        elif min_dist <= 4:
+            return 1
         
         return 0
     
@@ -244,41 +276,43 @@ class AI:
         Returns:
             float: 評価値
         """
-        # 盤面の中心からの距離
-        center = self.board.size // 2
-        distance_from_center = abs(x - center) + abs(y - center)
+        size = self.board.size
+        center = size // 2
         
-        # 3線、4線の価値
-        line_x = min(x, self.board.size - 1 - x)
-        line_y = min(y, self.board.size - 1 - y)
+        # 盤面の進行度を計算
+        stones_count = np.sum(self.board.board != Board.EMPTY)
+        progress = stones_count / (size * size)
         
-        # 9路盤の場合、2線と3線を重視
-        if self.board.size == 9:
-            if line_x == 1 or line_y == 1:  # 2線
-                line_value = 1.5
-            elif line_x == 2 or line_y == 2:  # 3線
-                line_value = 2.0
-            else:  # その他
-                line_value = 1.0
+        # 序盤（進行度30%未満）
+        if progress < 0.3:
+            # 序盤は3線、4線を重視
+            line = min(x, y, size-1-x, size-1-y)
+            if line == 2 or line == 3:  # 3線、4線
+                return 3
+            elif line == 1:  # 2線
+                return 1
+            elif line == 0:  # 1線（端）
+                return 0
+            else:  # 中央
+                return 2
+        
+        # 中盤（進行度30%～70%）
+        elif progress < 0.7:
+            # 中盤は中央を重視
+            dist_from_center = abs(x - center) + abs(y - center)
+            return max(0, 4 - dist_from_center)
+        
+        # 終盤（進行度70%以上）
         else:
-            # 19路盤などの場合は3線、4線を重視
-            if line_x == 2 or line_y == 2:  # 3線
-                line_value = 2.0
-            elif line_x == 3 or line_y == 3:  # 4線
-                line_value = 1.8
-            else:  # その他
-                line_value = 1.0
-        
-        # 星の位置（天元）は特に価値が高い
-        if x == center and y == center:
-            star_value = 1.5
-        # 9路盤の場合、四隅の星の位置
-        elif self.board.size == 9 and ((x == 2 and y == 2) or (x == 2 and y == 6) or (x == 6 and y == 2) or (x == 6 and y == 6)):
-            star_value = 1.3
-        else:
-            star_value = 1.0
-        
-        # 盤面の中心に近いほど価値が高い（ただし、線の価値も考慮）
-        center_value = 1.0 - (distance_from_center / (self.board.size * 2))
-        
-        return line_value * star_value * center_value * 3
+            # 終盤は相手の影響圏への侵入を重視
+            # AIは常に白石、相手は常に黒石
+            ai_stone = Board.WHITE
+            opponent_stone = Board.BLACK
+            
+            # 相手の影響圏かどうかをチェック
+            opponent_influence = self.board.black_influence
+            
+            if opponent_influence[y, x]:
+                return 4
+            
+            return 1

@@ -284,11 +284,11 @@ class TestBoard(unittest.TestCase):
         black_score = self.board.calculate_score(Board.BLACK)
         white_score = self.board.calculate_score(Board.WHITE)
         
-        # 黒の得点: 陣地1点
+        # 黒の得点: 石1個
         self.assertEqual(black_score, 1)
         
-        # 白の得点: 陣地1点 + 取った石1個
-        self.assertEqual(white_score, 1)
+        # 白の得点: 石1個 + 取った石1個
+        self.assertEqual(white_score, 2)
     
     def test_update_preview(self):
         """プレビュー更新のテスト"""
