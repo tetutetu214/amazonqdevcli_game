@@ -717,7 +717,7 @@ class UI:
             self.screen.blit(ai_text, (bar_x + player_width + 10, bar_y + bar_height/2 - ai_text.get_height()/2))
         
         # 優位性の説明テキスト
-        advantage_text = self.small_font.render("勝率", True, self.BLACK)
+        advantage_text = self.small_font.render("優勢", True, self.BLACK)
         self.screen.blit(advantage_text, (bar_x, bar_y - 25))
         
         # プレイヤーとAIのラベル
