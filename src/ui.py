@@ -196,6 +196,9 @@ class UI:
         # タイトルテキストを描画
         self.screen.blit(title_text, (title_x, title_y))
         
+        # マウス位置を取得
+        mouse_pos = pygame.mouse.get_pos()
+        
         # ゲーム開始ボタン（半透明の背景付き）
         button_bg = pygame.Surface((self.black_button.width + 20, self.black_button.height + 20), pygame.SRCALPHA)
         button_bg.fill((0, 0, 0, 180))  # 半透明の黒
@@ -206,12 +209,27 @@ class UI:
         # 半透明背景を描画
         self.screen.blit(button_bg, (self.black_button.x - 10, self.black_button.y - 10))
         
-        # ボタンを描画
-        pygame.draw.rect(self.screen, (50, 50, 50), self.black_button)
-        pygame.draw.rect(self.screen, self.BLACK, self.black_button, 2)
+        # カーソルがボタン上にあるかチェック
+        button_hover = self.black_button.collidepoint(mouse_pos)
+        
+        # ボタンを描画（カーソルが上にある場合は色を変更）
+        if button_hover:
+            # ホバー時は明るい色
+            button_color = (80, 80, 80)  # 明るい灰色
+            border_color = (200, 200, 200)  # 明るい白
+            text_color = (255, 255, 200)  # 明るい黄色がかった白
+        else:
+            # 通常時
+            button_color = (50, 50, 50)  # 暗い灰色
+            border_color = self.WHITE  # 白
+            text_color = self.WHITE  # 白
+        
+        # ボタンと枠を描画
+        pygame.draw.rect(self.screen, button_color, self.black_button)
+        pygame.draw.rect(self.screen, border_color, self.black_button, 2)
         
         # ボタンテキスト
-        black_text = self.medium_font.render("対局開始", True, self.WHITE)
+        black_text = self.medium_font.render("対局開始", True, text_color)
         self.screen.blit(black_text, (self.black_button.centerx - black_text.get_width() // 2, 
                                     self.black_button.centery - black_text.get_height() // 2))
     
