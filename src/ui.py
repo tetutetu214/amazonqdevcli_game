@@ -88,8 +88,8 @@ class UI:
         self.play_again_button = pygame.Rect(self.width // 2 - 100, self.height * 0.7, 200, 50)
         self.back_to_title_button = pygame.Rect(self.width // 2 - 100, self.height * 0.85, 200, 50)
         
-        # ゲーム開始ボタン（黒石のみ）
-        self.black_button = pygame.Rect(self.width // 2 - 100, self.height * 0.4, 200, 50)
+        # ゲーム開始ボタン（黒石のみ）- 位置は後で動的に調整
+        self.black_button = pygame.Rect(self.width // 2 - 100, self.height * 0.6, 200, 50)
         
         # 画像の読み込み
         self.load_images()
@@ -171,16 +171,25 @@ class UI:
         # 背景
         self.screen.blit(self.background_img, (0, 0))
         
+        # タイトル画像とテキストの両方を表示
+        title_y_position = self.height * 0.1
+        
         # タイトル画像がある場合は表示
         if hasattr(self, 'title_img') and self.title_img is not None:
             # 画面上部に配置
             self.screen.blit(self.title_img, 
                             (self.width // 2 - self.title_img.get_width() // 2, 
-                             self.height * 0.1))
-        else:
-            # タイトル画像がない場合はテキストを表示
-            title_text = self.title_font.render("GOGO 囲碁", True, self.BLACK)
-            self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.2))
+                             title_y_position))
+            # 画像の下にテキストタイトルを表示するための位置調整
+            title_y_position += self.title_img.get_height() + 20
+        
+        # テキストタイトルを常に表示
+        title_text = self.title_font.render("GOGO 囲碁", True, self.BLACK)
+        self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, title_y_position))
+        
+        # ゲーム開始ボタンの位置を調整
+        button_y = title_y_position + title_text.get_height() + 40
+        self.black_button.y = button_y
         
         # ゲーム開始ボタン
         pygame.draw.rect(self.screen, (50, 50, 50), self.black_button)
