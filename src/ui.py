@@ -205,7 +205,7 @@ class UI:
         pygame.draw.rect(self.screen, self.BLACK, self.black_button, 2)
         
         # ボタンテキスト
-        black_text = self.medium_font.render("ゲーム開始", True, self.WHITE)
+        black_text = self.medium_font.render("対局開始", True, self.WHITE)
         self.screen.blit(black_text, (self.black_button.centerx - black_text.get_width() // 2, 
                                     self.black_button.centery - black_text.get_height() // 2))
     
