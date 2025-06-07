@@ -105,6 +105,19 @@ class UI:
         """画像リソースの読み込み"""
         # 画像ディレクトリのパス
         image_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'images')
+        title_image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'title.png')
+        
+        # タイトル画像の読み込み
+        if os.path.exists(title_image_path):
+            self.title_img = pygame.image.load(title_image_path)
+            # 画面の幅に合わせてリサイズ（高さは比率を維持）
+            img_width = self.width * 0.8
+            img_height = img_width * self.title_img.get_height() / self.title_img.get_width()
+            self.title_img = pygame.transform.scale(self.title_img, (int(img_width), int(img_height)))
+            print(f"タイトル画像を読み込みました: {title_image_path}")
+        else:
+            self.title_img = None
+            print(f"タイトル画像が見つかりませんでした: {title_image_path}")
         
         # デフォルトの画像を作成（実際の画像がない場合用）
         self.create_default_images()
@@ -158,9 +171,16 @@ class UI:
         # 背景
         self.screen.blit(self.background_img, (0, 0))
         
-        # タイトル
-        title_text = self.title_font.render("GOGO 囲碁", True, self.BLACK)
-        self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.2))
+        # タイトル画像がある場合は表示
+        if hasattr(self, 'title_img') and self.title_img is not None:
+            # 画面上部に配置
+            self.screen.blit(self.title_img, 
+                            (self.width // 2 - self.title_img.get_width() // 2, 
+                             self.height * 0.1))
+        else:
+            # タイトル画像がない場合はテキストを表示
+            title_text = self.title_font.render("GOGO 囲碁", True, self.BLACK)
+            self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, self.height * 0.2))
         
         # ゲーム開始ボタン
         pygame.draw.rect(self.screen, (50, 50, 50), self.black_button)
