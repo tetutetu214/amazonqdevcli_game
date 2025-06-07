@@ -110,10 +110,8 @@ class UI:
         # タイトル画像の読み込み
         if os.path.exists(title_image_path):
             self.title_img = pygame.image.load(title_image_path)
-            # 画面の幅に合わせてリサイズ（高さは比率を維持）
-            img_width = self.width * 0.8
-            img_height = img_width * self.title_img.get_height() / self.title_img.get_width()
-            self.title_img = pygame.transform.scale(self.title_img, (int(img_width), int(img_height)))
+            # 画面サイズに合わせてリサイズ
+            self.title_img = pygame.transform.scale(self.title_img, (self.width, self.height))
             print(f"タイトル画像を読み込みました: {title_image_path}")
         else:
             self.title_img = None
@@ -168,32 +166,45 @@ class UI:
         """タイトル画面の描画"""
         # 背景をクリア
         self.screen.fill((0, 0, 0))  # 一度画面を黒でクリア
-        # 背景
-        self.screen.blit(self.background_img, (0, 0))
         
-        # タイトル画像とテキストの両方を表示
-        title_y_position = self.height * 0.1
-        
-        # タイトル画像がある場合は表示
+        # タイトル画像がある場合は背景として表示、なければデフォルト背景を表示
         if hasattr(self, 'title_img') and self.title_img is not None:
-            # 画面上部に配置
-            self.screen.blit(self.title_img, 
-                            (self.width // 2 - self.title_img.get_width() // 2, 
-                             title_y_position))
-            # 画像の下にテキストタイトルを表示するための位置調整
-            title_y_position += self.title_img.get_height() + 20
+            self.screen.blit(self.title_img, (0, 0))
+        else:
+            self.screen.blit(self.background_img, (0, 0))
         
-        # テキストタイトルを常に表示
+        # タイトルテキストを表示（半透明の背景付き）
         title_text = self.title_font.render("GOGO 囲碁", True, self.BLACK)
-        self.screen.blit(title_text, (self.width // 2 - title_text.get_width() // 2, title_y_position))
         
-        # ゲーム開始ボタンの位置を調整
-        button_y = title_y_position + title_text.get_height() + 40
-        self.black_button.y = button_y
+        # タイトルテキスト用の半透明背景
+        title_bg = pygame.Surface((title_text.get_width() + 40, title_text.get_height() + 20), pygame.SRCALPHA)
+        title_bg.fill((255, 255, 255, 180))  # 半透明の白
         
-        # ゲーム開始ボタン
+        # 画面中央上部に配置
+        title_x = self.width // 2 - title_text.get_width() // 2
+        title_y = self.height * 0.2
+        
+        # 半透明背景を描画
+        self.screen.blit(title_bg, (title_x - 20, title_y - 10))
+        
+        # タイトルテキストを描画
+        self.screen.blit(title_text, (title_x, title_y))
+        
+        # ゲーム開始ボタン（半透明の背景付き）
+        button_bg = pygame.Surface((self.black_button.width + 20, self.black_button.height + 20), pygame.SRCALPHA)
+        button_bg.fill((0, 0, 0, 180))  # 半透明の黒
+        
+        # ボタンの位置を固定
+        self.black_button.y = self.height * 0.6
+        
+        # 半透明背景を描画
+        self.screen.blit(button_bg, (self.black_button.x - 10, self.black_button.y - 10))
+        
+        # ボタンを描画
         pygame.draw.rect(self.screen, (50, 50, 50), self.black_button)
         pygame.draw.rect(self.screen, self.BLACK, self.black_button, 2)
+        
+        # ボタンテキスト
         black_text = self.medium_font.render("ゲーム開始", True, self.WHITE)
         self.screen.blit(black_text, (self.black_button.centerx - black_text.get_width() // 2, 
                                     self.black_button.centery - black_text.get_height() // 2))
