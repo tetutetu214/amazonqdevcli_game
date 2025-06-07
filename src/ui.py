@@ -187,6 +187,12 @@ class UI:
         # 半透明背景を描画
         self.screen.blit(title_bg, (title_x - 20, title_y - 10))
         
+        # 白枠を描画
+        pygame.draw.rect(self.screen, self.WHITE, 
+                        (title_x - 20, title_y - 10, 
+                         title_text.get_width() + 40, title_text.get_height() + 20), 
+                        2)
+        
         # タイトルテキストを描画
         self.screen.blit(title_text, (title_x, title_y))
         
